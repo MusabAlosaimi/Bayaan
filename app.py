@@ -1,687 +1,748 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-import random
-from datetime import datetime
-import base64
-from collections import defaultdict
-import re
 
-# Set page configuration
+# Page configuration MUST be first
 st.set_page_config(
-    page_title="أذكار المسلم - Islamic Adhkar",
+    page_title="أذكار المسلم الذكي - Smart Islamic Adhkar",
     page_icon="🕌",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Sample Adhkar data (would normally come from a CSV)
-adhkar_data = [
-    {
-        "id": 1,
-        "arabic": "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ",
-        "transliteration": "Subhan Allah wa bihamdihi",
-        "translation": "Glory is to Allah and praise is to Him",
-        "category": "morning",
-        "source": "Sahih Bukhari",
-        "reward": "Whoever says this 100 times, his sins will be forgiven even if they are like the foam of the sea",
-        "count": 100,
-    },
-    {
-        "id": 2,
-        "arabic": "لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ",
-        "transliteration": "La ilaha illa Allah wahdahu la sharika lahu, lahu al-mulku wa lahu al-hamdu wa huwa 'ala kulli shay'in qadir",
-        "translation": "There is no god but Allah alone, with no partner. His is the dominion and His is the praise, and He is able to do all things",
-        "category": "evening",
-        "source": "Sahih Muslim",
-        "reward": "Whoever says this 10 times, it is as if he freed four slaves from the children of Isma'il",
-        "count": 10,
-    },
-    {
-        "id": 3,
-        "arabic": "اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ",
-        "transliteration": "Allahumma a'inni 'ala dhikrika wa shukrika wa husni 'ibadatika",
-        "translation": "O Allah, help me to remember You, thank You, and worship You in the best manner",
-        "category": "general",
-        "source": "Abu Dawud",
-        "reward": "A comprehensive du'a for spiritual improvement",
-        "count": 1,
-    },
-    {
-        "id": 4,
-        "arabic": "أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ الَّذِي لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ وَأَتُوبُ إِلَيْهِ",
-        "transliteration": "Astaghfir Allah al-'Azeem alladhi la ilaha illa huwa al-Hayy al-Qayyum wa atubu ilayhi",
-        "translation": "I seek forgiveness from Allah the Mighty, whom there is no god but He, the Living, the Eternal, and I repent to Him",
-        "category": "istighfar",
-        "source": "At-Tirmidhi",
-        "reward": "Whoever says this, Allah will forgive him even if he fled from battle",
-        "count": 3,
-    },
-    {
-        "id": 5,
-        "arabic": "بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ",
-        "transliteration": "Bismillah alladhi la yadurru ma'a ismihi shay'un fi al-ardi wa la fi as-sama'i wa huwa as-Sami' al-'Alim",
-        "translation": "In the name of Allah, with whose name nothing on earth or in heaven can cause harm, and He is the All-Hearing, All-Knowing",
-        "category": "protection",
-        "source": "Abu Dawud",
-        "reward": "Protection from harm when said 3 times in morning and evening",
-        "count": 3,
-    },
-    {
-        "id": 6,
-        "arabic": "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ",
-        "transliteration": "Rabbana atina fid-dunya hasanatan wa fil-akhirati hasanatan wa qina 'adhaban-nar",
-        "translation": "Our Lord, give us in this world [that which is] good and in the Hereafter [that which is] good and protect us from the punishment of the Fire",
-        "category": "prayer",
-        "source": "Quran 2:201",
-        "reward": "A comprehensive prayer for good in both worlds",
-        "count": 1,
-    },
-    {
-        "id": 7,
-        "arabic": "حَسْبِيَ اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ ۖ عَلَيْهِ تَوَكَّلْتُ ۖ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ",
-        "transliteration": "Hasbiyallahu la ilaha illa huwa, alayhi tawakkaltu, wa huwa Rabbul-arshil-azeem",
-        "translation": "Sufficient for me is Allah; there is no deity except Him. On Him I have relied, and He is the Lord of the Great Throne",
-        "category": "trust",
-        "source": "Quran 9:129",
-        "reward": "Reliance on Allah in all matters",
-        "count": 7,
-    }
-]
+import pandas as pd
+import numpy as np
+from datetime import datetime
+import random
+import pickle
+from collections import Counter
+import re
 
-# Convert to DataFrame
-df = pd.DataFrame(adhkar_data)
+# Try to import optional dependencies
+try:
+    import joblib
+    JOBLIB_AVAILABLE = True
+except ImportError:
+    JOBLIB_AVAILABLE = False
 
-# Initialize session state
-def init_session_state():
-    if 'favorites' not in st.session_state:
-        st.session_state.favorites = []
-    if 'read_counts' not in st.session_state:
-        st.session_state.read_counts = defaultdict(int)
-    if 'daily_adhkar' not in st.session_state:
-        st.session_state.daily_adhkar = df.sample(1).iloc[0].to_dict()
-    if 'active_tab' not in st.session_state:
-        st.session_state.active_tab = "ai"
-    if 'search_query' not in st.session_state:
-        st.session_state.search_query = ""
+# Try to import scikit-learn, fallback gracefully if not available
+try:
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
 
-# CSS styling
-st.markdown(f"""
+import warnings
+warnings.filterwarnings('ignore')
+
+# Modern React-style CSS
+st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
     
-    /* Modern Color Scheme */
-    :root {{
-        --primary: #2563eb;
-        --primary-light: #dbeafe;
-        --secondary: #8b5cf6;
-        --accent: #10b981;
-        --light: #f8fafc;
-        --dark: #1e293b;
-        --text: #334155;
-        --border: #e2e8f0;
-        --card-shadow: 0 4px 20px rgba(0,0,0,0.05);
-    }}
+    /* Modern React-style Variables */
+    :root {
+        --emerald-50: #ecfdf5;
+        --emerald-100: #d1fae5;
+        --emerald-500: #10b981;
+        --emerald-600: #059669;
+        --emerald-700: #047857;
+        --emerald-800: #065f46;
+        --teal-50: #f0fdfa;
+        --teal-500: #14b8a6;
+        --teal-600: #0d9488;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --blue-500: #3b82f6;
+        --purple-500: #8b5cf6;
+        --yellow-100: #fef3c7;
+        --yellow-800: #92400e;
+        --red-100: #fee2e2;
+        --red-500: #ef4444;
+        --white: #ffffff;
+    }
     
-    body {{
-        background: #f8fafc;
-        font-family: 'Inter', sans-serif;
-    }}
+    /* Global Styles */
+    .stApp {
+        background: linear-gradient(135deg, var(--emerald-50) 0%, var(--white) 50%, var(--teal-50) 100%);
+        min-height: 100vh;
+    }
     
-    .container {{
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 0 1rem;
-    }}
+    /* Hide default Streamlit elements */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
     
-    .header {{
-        background: linear-gradient(135deg, #0c4b6e, #1c6ea4);
-        padding: 1.5rem 0;
-        text-align: center;
-        box-shadow: var(--card-shadow);
-        position: sticky;
-        top: 0;
-        z-index: 100;
+    /* Modern Header */
+    .modern-header {
+        background: linear-gradient(135deg, var(--emerald-600) 0%, var(--teal-600) 100%);
         color: white;
-        border-radius: 0 0 20px 20px;
-    }}
+        padding: 2rem 0;
+        margin: -1rem -1rem 2rem -1rem;
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
+    }
     
-    .logo-container {{
-        display: flex;
-        justify-content: center;
-        padding: 0.5rem 0;
-    }}
+    .header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        text-align: center;
+    }
     
-    .app-title {{
-        font-size: 2.2rem;
+    .header-title {
+        font-size: 2.5rem;
         font-weight: 700;
-        margin: 0.25rem 0;
+        margin-bottom: 0.5rem;
         font-family: 'Amiri', serif;
-    }}
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
     
-    .app-subtitle {{
-        font-size: 1.1rem;
-        font-weight: 400;
-        margin: 0.25rem 0;
-        opacity: 0.9;
-    }}
+    .header-subtitle {
+        font-size: 1.2rem;
+        color: rgba(255, 255, 255, 0.9);
+        font-family: 'Inter', sans-serif;
+        font-weight: 300;
+    }
     
-    .nav-container {{
+    /* Modern Tabs */
+    .modern-tabs {
         display: flex;
-        justify-content: center;
-        gap: 0.5rem;
-        margin: 1.5rem 0;
-        padding: 1rem;
-        background: white;
+        background: var(--white);
         border-radius: 12px;
-        box-shadow: var(--card-shadow);
-    }}
+        padding: 6px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--gray-100);
+    }
     
-    .nav-button {{
-        padding: 0.7rem 1.5rem;
+    .tab-button {
+        flex: 1;
+        padding: 12px 20px;
+        background: transparent;
+        border: none;
         border-radius: 8px;
         cursor: pointer;
-        transition: all 0.2s ease;
-        font-weight: 600;
-        border: none;
-        background: white;
-        color: var(--text);
-        font-size: 1rem;
-    }}
-    
-    .nav-button:hover {{
-        background: var(--primary-light);
-        color: var(--primary);
-    }}
-    
-    .nav-button.active {{
-        background: var(--primary);
-        color: white;
-    }}
-    
-    .card {{
-        background: white;
-        padding: 1.5rem;
-        border-radius: 16px;
-        margin: 1.5rem 0;
-        border: 1px solid var(--border);
-        direction: rtl;
-        text-align: right;
-        box-shadow: var(--card-shadow);
-        transition: all 0.2s ease;
-    }}
-    
-    .card:hover {{
-        transform: translateY(-3px);
-        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-    }}
-    
-    .featured-card {{
-        background: linear-gradient(135deg, #eff6ff, #dbeafe);
-        border-left: 4px solid var(--primary);
-    }}
-    
-    .adhkar-text {{
-        font-size: 1.8rem;
-        line-height: 1.8;
-        color: var(--dark);
-        font-family: 'Amiri', serif;
-        margin-bottom: 1rem;
-        font-weight: 400;
-        text-align: center;
-    }}
-    
-    .badge {{
-        background: var(--accent);
-        color: white;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        display: inline-block;
-        margin-left: 8px;
-    }}
-    
-    .tag {{
-        background: var(--primary);
-        color: white;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.9rem;
+        font-family: 'Inter', sans-serif;
         font-weight: 500;
-        display: inline-block;
-        margin-top: 0.5rem;
-    }}
-    
-    .section {{
-        background: white;
-        padding: 1.5rem;
-        border-radius: 16px;
-        margin: 1.5rem 0;
-        border: 1px solid var(--border);
-        box-shadow: var(--card-shadow);
-    }}
-    
-    .search-container {{
-        background: white;
-        padding: 1.5rem;
-        border-radius: 16px;
-        margin: 1.5rem 0;
-        border: 1px solid var(--border);
-        box-shadow: var(--card-shadow);
-    }}
-    
-    .search-bar {{
+        font-size: 0.95rem;
+        color: var(--gray-600);
+        transition: all 0.3s ease;
         display: flex;
-        gap: 15px;
-        margin-bottom: 1.5rem;
-    }}
-    
-    .search-input {{
-        flex: 1;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 14px 18px;
-        font-size: 1.1rem;
-        direction: rtl;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }}
-    
-    .action-button {{
-        background: var(--primary);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 12px 24px;
-        font-weight: 500;
-        font-size: 1rem;
-        transition: all 0.2s ease;
-        cursor: pointer;
-        display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-        margin: 5px;
-    }}
+    }
     
-    .action-button:hover {{
-        background: #1d4ed8;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-    }}
+    .tab-button.active {
+        background: var(--emerald-600);
+        color: white;
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+    }
     
-    .secondary-button {{
-        background: white;
-        color: var(--primary);
-        border: 1px solid var(--primary);
-    }}
+    .tab-button:hover:not(.active) {
+        background: var(--emerald-50);
+        color: var(--emerald-700);
+    }
     
-    .footer {{
-        text-align: center;
-        padding: 2rem 0;
-        margin-top: 3rem;
-        color: var(--text);
-        font-size: 0.9rem;
-    }}
+    /* Modern Search */
+    .search-container {
+        position: relative;
+        margin-bottom: 2rem;
+    }
     
-    .stats-container {{
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-        margin: 2rem 0;
-    }}
-    
-    .stat-card {{
-        background: white;
-        padding: 1.5rem;
-        border-radius: 16px;
-        text-align: center;
-        box-shadow: var(--card-shadow);
-        border: 1px solid var(--border);
-    }}
-    
-    .stat-number {{
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--primary);
-        margin: 0.5rem 0;
-    }}
-    
-    .stat-label {{
-        font-size: 1rem;
-        color: var(--text);
-    }}
-    
-    .icon-button {{
-        background: transparent;
-        border: none;
-        color: #666;
+    .search-icon {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray-400);
         font-size: 1.2rem;
+        z-index: 2;
+    }
+    
+    /* Modern Cards */
+    .modern-card {
+        background: var(--white);
+        border-radius: 16px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--gray-100);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .modern-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
+        border-color: var(--emerald-200);
+    }
+    
+    .featured-card {
+        border: 2px solid var(--emerald-500);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+    }
+    
+    .card-header {
+        padding: 1.5rem 1.5rem 1rem 1.5rem;
+    }
+    
+    .card-content {
+        padding: 0 1.5rem 1.5rem 1.5rem;
+    }
+    
+    .card-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--gray-100);
+    }
+    
+    /* Category Badges */
+    .category-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        text-transform: capitalize;
+    }
+    
+    .badge-morning { background: var(--yellow-100); color: var(--yellow-800); }
+    .badge-evening { background: #f3e8ff; color: #7c3aed; }
+    .badge-general { background: #dbeafe; color: #1d4ed8; }
+    .badge-istighfar { background: var(--emerald-100); color: var(--emerald-800); }
+    .badge-protection { background: var(--red-100); color: #dc2626; }
+    
+    /* Arabic Text */
+    .arabic-text {
+        font-family: 'Amiri', serif;
+        font-size: 1.8rem;
+        line-height: 1.8;
+        color: var(--emerald-800);
+        margin-bottom: 1rem;
+        text-align: right;
+        direction: rtl;
+    }
+    
+    .transliteration {
+        font-style: italic;
+        color: var(--gray-600);
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+    }
+    
+    .translation {
+        color: var(--gray-700);
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
+    /* Modern Buttons */
+    .modern-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: none;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        font-size: 0.9rem;
         cursor: pointer;
-        padding: 8px;
-        border-radius: 50%;
-        transition: all 0.2s ease;
-    }}
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
     
-    .icon-button:hover {{
-        background: #f0f0f0;
-        color: var(--primary);
-    }}
+    .btn-primary {
+        background: var(--emerald-600);
+        color: white;
+    }
     
-    .favorite {{
-        color: #e53e3e !important;
-    }}
+    .btn-primary:hover {
+        background: var(--emerald-700);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    }
     
-    @media (max-width: 768px) {{
-        .stats-container {{
-            grid-template-columns: 1fr;
-        }}
+    .btn-ghost {
+        background: transparent;
+        color: var(--gray-500);
+        border: 1px solid var(--gray-200);
+    }
+    
+    .btn-ghost:hover {
+        background: var(--gray-50);
+        color: var(--gray-700);
+    }
+    
+    .btn-ghost.active {
+        color: var(--red-500);
+        border-color: var(--red-200);
+    }
+    
+    /* Stats Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, var(--emerald-500) 0%, var(--teal-500) 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-card.blue {
+        background: linear-gradient(135deg, var(--blue-500) 0%, #6366f1 100%);
+    }
+    
+    .stat-card.purple {
+        background: linear-gradient(135deg, var(--purple-500) 0%, #ec4899 100%);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+    
+    /* Reward Box */
+    .reward-box {
+        background: var(--emerald-50);
+        border: 1px solid var(--emerald-100);
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .reward-text {
+        color: var(--emerald-800);
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--gray-500);
+    }
+    
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .header-title {
+            font-size: 2rem;
+        }
         
-        .nav-container {{
-            flex-wrap: wrap;
-        }}
+        .header-subtitle {
+            font-size: 1rem;
+        }
         
-        .adhkar-text {{
+        .arabic-text {
             font-size: 1.5rem;
-        }}
-    }}
+        }
+        
+        .modern-tabs {
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    /* Streamlit overrides */
+    .stTabs [data-baseweb="tab-list"] {
+        display: none;
+    }
+    
+    .stTabs [data-baseweb="tab-panel"] {
+        padding: 0;
+    }
+    
+    .stButton > button {
+        background: var(--emerald-600) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 8px 16px !important;
+        font-weight: 500 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton > button:hover {
+        background: var(--emerald-700) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3) !important;
+    }
+    
+    .stTextInput > div > div > input {
+        border-radius: 12px !important;
+        border: 2px solid var(--gray-200) !important;
+        padding: 12px 16px 12px 40px !important;
+        font-size: 1.1rem !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stTextInput > div > div > input:focus {
+        border-color: var(--emerald-500) !important;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+    }
 </style>
-
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)
 
-# Initialize session state
-init_session_state()
+# Sample Adhkar data (enhanced)
+@st.cache_data
+def load_adhkar_data():
+    return [
+        {
+            "id": 1,
+            "arabic": "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ",
+            "transliteration": "Subhan Allah wa bihamdihi",
+            "translation": "Glory is to Allah and praise is to Him",
+            "category": "morning",
+            "source": "Sahih Bukhari",
+            "reward": "Whoever says this 100 times, his sins will be forgiven even if they are like the foam of the sea",
+            "count": 100,
+        },
+        {
+            "id": 2,
+            "arabic": "لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ",
+            "transliteration": "La ilaha illa Allah wahdahu la sharika lahu, lahu al-mulku wa lahu al-hamdu wa huwa 'ala kulli shay'in qadir",
+            "translation": "There is no god but Allah alone, with no partner. His is the dominion and His is the praise, and He is able to do all things",
+            "category": "evening",
+            "source": "Sahih Muslim",
+            "reward": "Whoever says this 10 times, it is as if he freed four slaves from the children of Isma'il",
+            "count": 10,
+        },
+        {
+            "id": 3,
+            "arabic": "اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ",
+            "transliteration": "Allahumma a'inni 'ala dhikrika wa shukrika wa husni 'ibadatika",
+            "translation": "O Allah, help me to remember You, thank You, and worship You in the best manner",
+            "category": "general",
+            "source": "Abu Dawud",
+            "reward": "A comprehensive du'a for spiritual improvement",
+            "count": 1,
+        },
+        {
+            "id": 4,
+            "arabic": "أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ الَّذِي لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ وَأَتُوبُ إِلَيْهِ",
+            "transliteration": "Astaghfir Allah al-'Azeem alladhi la ilaha illa huwa al-Hayy al-Qayyum wa atubu ilayhi",
+            "translation": "I seek forgiveness from Allah the Mighty, whom there is no god but He, the Living, the Eternal, and I repent to Him",
+            "category": "istighfar",
+            "source": "At-Tirmidhi",
+            "reward": "Whoever says this, Allah will forgive him even if he fled from battle",
+            "count": 3,
+        },
+        {
+            "id": 5,
+            "arabic": "بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ",
+            "transliteration": "Bismillah alladhi la yadurru ma'a ismihi shay'un fi al-ardi wa la fi as-sama'i wa huwa as-Sami' al-'Alim",
+            "translation": "In the name of Allah, with whose name nothing on earth or in heaven can cause harm, and He is the All-Hearing, All-Knowing",
+            "category": "protection",
+            "source": "Abu Dawud",
+            "reward": "Protection from harm when said 3 times in morning and evening",
+            "count": 3,
+        },
+    ]
 
-# Helper functions
-def increment_read_count(adhkar_id):
-    st.session_state.read_counts[adhkar_id] += 1
+# Simple cosine similarity for search
+def calculate_similarity(query, text):
+    query_words = set(query.lower().split())
+    text_words = set(text.lower().split())
+    
+    if not query_words or not text_words:
+        return 0
+    
+    intersection = query_words.intersection(text_words)
+    union = query_words.union(text_words)
+    
+    return len(intersection) / len(union) if union else 0
 
-def toggle_favorite(adhkar_id):
-    if adhkar_id in st.session_state.favorites:
-        st.session_state.favorites.remove(adhkar_id)
-    else:
-        st.session_state.favorites.append(adhkar_id)
+def initialize_session_state():
+    """Initialize session state variables"""
+    if 'favorites' not in st.session_state:
+        st.session_state.favorites = []
+    if 'read_counts' not in st.session_state:
+        st.session_state.read_counts = {}
+    if 'daily_adhkar' not in st.session_state:
+        adhkar_data = load_adhkar_data()
+        st.session_state.daily_adhkar = random.choice(adhkar_data)
+    if 'active_tab' not in st.session_state:
+        st.session_state.active_tab = 'search'
 
-def get_category_color(category):
-    colors = {
-        "morning": "#f6e05e",
-        "evening": "#9f7aea",
-        "general": "#4299e1",
-        "istighfar": "#48bb78",
-        "protection": "#f56565",
-        "prayer": "#ed64a6",
-        "trust": "#0bc5ea"
+def get_category_class(category):
+    category_classes = {
+        'morning': 'badge-morning',
+        'evening': 'badge-evening',
+        'general': 'badge-general',
+        'istighfar': 'badge-istighfar',
+        'protection': 'badge-protection',
     }
-    return colors.get(category, "#a0aec0")
+    return category_classes.get(category, 'badge-general')
 
-# Search function
-def search_adhkar(query):
-    if not query:
-        return df
+def display_adhkar_card(adhkar, featured=False):
+    """Display a modern adhkar card"""
+    card_class = "modern-card featured-card" if featured else "modern-card"
+    category_class = get_category_class(adhkar['category'])
     
-    query = query.lower()
-    results = []
-    
-    for idx, row in df.iterrows():
-        # Check if query exists in any of the text fields
-        if (query in row['arabic'].lower() or 
-            query in row['transliteration'].lower() or 
-            query in row['translation'].lower() or 
-            query in row['category'].lower() or 
-            query in row['source'].lower() or 
-            query in row['reward'].lower()):
-            results.append(row)
-    
-    return pd.DataFrame(results)
-
-# UI Components
-def render_adhkar_card(adhkar, featured=False):
-    arabic = adhkar['arabic']
-    transliteration = adhkar['transliteration']
-    translation = adhkar['translation']
-    category = adhkar['category']
-    source = adhkar['source']
-    reward = adhkar['reward']
-    count = adhkar['count']
-    adhkar_id = adhkar['id']
-    
-    read_count = st.session_state.read_counts.get(adhkar_id, 0)
-    is_favorite = adhkar_id in st.session_state.favorites
-    
-    card_class = "card featured-card" if featured else "card"
+    is_favorite = adhkar['id'] in st.session_state.favorites
+    read_count = st.session_state.read_counts.get(adhkar['id'], 0)
     
     st.markdown(f"""
     <div class="{card_class}">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <div class="tag" style="background: {get_category_color(category)};">
-                {category.capitalize()}
+        <div class="card-header">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <span class="category-badge {category_class}">{adhkar['category']}</span>
+                <div style="display: flex; gap: 8px;">
+                    {'❤️' if is_favorite else '🤍'}
+                </div>
             </div>
-            <div>
-                <button class="icon-button {'favorite' if is_favorite else ''}" onclick="toggleFavorite({adhkar_id})" title="{'Remove from favorites' if is_favorite else 'Add to favorites'}">
-                    ♥
-                </button>
-                <button class="icon-button" onclick="copyToClipboard('{arabic}')" title="Copy">
-                    ⎘
-                </button>
-            </div>
-        </div>
-        
-        <div class="adhkar-text">{arabic}</div>
-        
-        <div style="text-align: center; margin: 1rem 0; color: #4a5568;">
-            <div style="font-style: italic; margin-bottom: 0.5rem;">{transliteration}</div>
-            <div>{translation}</div>
-        </div>
-        
-        <div style="margin: 1.5rem 0; padding: 1rem; background: #f7fafc; border-radius: 8px;">
-            <div style="font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>Reward:</strong> {reward}</div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
-                <div><strong>Source:</strong> {source}</div>
-                <div><strong>Recommended count:</strong> {count}</div>
-            </div>
-        </div>
-        
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <button class="action-button" onclick="incrementRead({adhkar_id})">
-                Mark as read
-            </button>
             
-            <div style="display: flex; align-items: center;">
-                <span style="margin-right: 0.5rem;">Read count:</span>
-                <span class="badge">{read_count}</span>
+            <div class="arabic-text">{adhkar['arabic']}</div>
+            <div class="transliteration">{adhkar['transliteration']}</div>
+            <div class="translation">{adhkar['translation']}</div>
+        </div>
+        
+        <div class="card-content">
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--gray-600); margin-bottom: 1rem;">
+                <span>المصدر: {adhkar['source']}</span>
+                <span>العدد المستحب: {adhkar['count']}</span>
             </div>
+            
+            <div class="reward-box">
+                <div class="reward-text">
+                    <strong>الفضل:</strong> {adhkar['reward']}
+                </div>
+            </div>
+            
+            <div class="card-actions">
+                <div style="display: flex; gap: 8px;">
+    """, unsafe_allow_html=True)
+    
+    # Action buttons
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+    
+    with col1:
+        if st.button("📖 قرأت هذا الذكر", key=f"read_{adhkar['id']}"):
+            st.session_state.read_counts[adhkar['id']] = st.session_state.read_counts.get(adhkar['id'], 0) + 1
+            st.success("✅ تم احتساب القراءة!")
+            st.rerun()
+    
+    with col2:
+        fav_text = "💔 إزالة من المفضلة" if is_favorite else "❤️ إضافة للمفضلة"
+        if st.button(fav_text, key=f"fav_{adhkar['id']}"):
+            if is_favorite:
+                st.session_state.favorites.remove(adhkar['id'])
+                st.success("تم إزالة الذكر من المفضلة")
+            else:
+                st.session_state.favorites.append(adhkar['id'])
+                st.success("✅ تم إضافة الذكر للمفضلة!")
+            st.rerun()
+    
+    with col3:
+        if st.button("📋 نسخ", key=f"copy_{adhkar['id']}"):
+            copy_text = f"{adhkar['arabic']}\n\n{adhkar['transliteration']}\n\n{adhkar['translation']}"
+            st.code(copy_text, language="text")
+    
+    with col4:
+        if st.button("🔗 مشاركة", key=f"share_{adhkar['id']}"):
+            share_text = f"{adhkar['arabic']}\n\n{adhkar['transliteration']}\n\n{adhkar['translation']}"
+            st.text_area("النص للمشاركة:", value=share_text, height=100, key=f"share_text_{adhkar['id']}")
+    
+    # Display read count if any
+    if read_count > 0:
+        st.markdown(f"""
+                <div style="margin-top: 8px;">
+                    <span style="background: var(--emerald-100); color: var(--emerald-700); padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">
+                        قُرئ {read_count} مرة
+                    </span>
+                </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("</div></div></div>", unsafe_allow_html=True)
+
+def main():
+    # Initialize session state
+    initialize_session_state()
+    
+    # Load data
+    adhkar_data = load_adhkar_data()
+    
+    # Modern Header
+    st.markdown("""
+    <div class="modern-header">
+        <div class="header-content">
+            <h1 class="header-title">أذكار المسلم الذكي</h1>
+            <p class="header-subtitle">Muslim Adhkar AI - Your Intelligent Islamic Remembrance Companion</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
-
-# Main app
-def main():
-    # Header
+    
+    # Modern Tab Navigation
     st.markdown("""
-    <div class="header">
-        <div class="app-title">أذكار المسلم الذكي</div>
-        <div class="app-subtitle">Muslim Adhkar AI - Your Intelligent Islamic Remembrance Companion</div>
+    <div class="modern-tabs">
+        <button class="tab-button active" onclick="setActiveTab('search')">
+            🔍 البحث
+        </button>
+        <button class="tab-button" onclick="setActiveTab('favorites')">
+            ❤️ المفضلة
+        </button>
+        <button class="tab-button" onclick="setActiveTab('daily')">
+            ⭐ اليومي
+        </button>
+        <button class="tab-button" onclick="setActiveTab('stats')">
+            📊 الإحصائيات
+        </button>
     </div>
     """, unsafe_allow_html=True)
     
-    # Navigation
-    tabs = {
-        "ai": "الذكاء الاصطناعي",
-        "daily": "العرضي",
-        "favorites": "المفضلة",
-        "search": "البحث"
-    }
+    # Tab selection using Streamlit tabs (hidden UI)
+    tabs = st.tabs(["البحث", "المفضلة", "اليومي", "الإحصائيات"])
     
-    tab_html = '<div class="nav-container">'
-    for tab_id, tab_name in tabs.items():
-        active = "active" if st.session_state.active_tab == tab_id else ""
-        tab_html += f'<button class="nav-button {active}" onclick="setActiveTab(\'{tab_id}\')">{tab_name}</button>'
-    tab_html += '</div>'
-    
-    st.markdown(tab_html, unsafe_allow_html=True)
-    
-    # Tab content
-    if st.session_state.active_tab == "ai":
-        st.markdown("### الذكاء الاصطناعي الموصي بالأذكار")
-        
-        # Featured Adhkar
-        daily_adhkar = st.session_state.daily_adhkar
-        render_adhkar_card(daily_adhkar, featured=True)
-        
-        # Refresh button
-        if st.button("احصل على ذكر جديد", key="refresh_daily"):
-            st.session_state.daily_adhkar = df.sample(1).iloc[0].to_dict()
-            st.experimental_rerun()
-        
-        # AI-powered recommendations
-        st.markdown("### توصيات ذكية")
-        recommendations = df.sample(2)
-        for idx, row in recommendations.iterrows():
-            render_adhkar_card(row.to_dict())
-    
-    elif st.session_state.active_tab == "daily":
-        st.markdown("### أذكار حسب الوقت")
-        
-        # Time-based greeting
-        current_hour = datetime.now().hour
-        if 5 <= current_hour < 12:
-            greeting = "🌅 أذكار الصباح"
-        elif 12 <= current_hour < 18:
-            greeting = "☀️ أذكار الظهر"
-        elif 18 <= current_hour < 22:
-            greeting = "🌆 أذكار المساء"
-        else:
-            greeting = "🌙 أذكار الليل"
-        
-        st.markdown(f"""
-        <div class="section">
-            <h3 style="text-align: center;">{greeting}</h3>
-            <p style="text-align: center; color: #4a5568;">الأذكار المناسبة لهذا الوقت من اليوم</p>
+    # Search Tab
+    with tabs[0]:
+        # Modern Search Bar
+        st.markdown("""
+        <div class="search-container">
+            <div class="search-icon">🔍</div>
         </div>
         """, unsafe_allow_html=True)
         
-        # Display time-based adhkar
-        if 5 <= current_hour < 12:
-            morning_adhkar = df[df['category'] == 'morning']
-            for idx, row in morning_adhkar.iterrows():
-                render_adhkar_card(row.to_dict())
+        search_query = st.text_input(
+            "",
+            placeholder="ابحث في الأذكار... (عربي أو إنجليزي)",
+            label_visibility="collapsed",
+            key="search_input"
+        )
+        
+        # Filter adhkar based on search
+        if search_query:
+            filtered_adhkar = []
+            for adhkar in adhkar_data:
+                searchable_text = f"{adhkar['arabic']} {adhkar['transliteration']} {adhkar['translation']} {adhkar['category']}"
+                similarity = calculate_similarity(search_query, searchable_text)
+                if similarity > 0:
+                    filtered_adhkar.append((adhkar, similarity))
+            
+            # Sort by similarity
+            filtered_adhkar.sort(key=lambda x: x[1], reverse=True)
+            adhkar_to_display = [adhkar for adhkar, _ in filtered_adhkar]
         else:
-            evening_adhkar = df[df['category'] == 'evening']
-            for idx, row in evening_adhkar.iterrows():
-                render_adhkar_card(row.to_dict())
+            adhkar_to_display = adhkar_data
+        
+        # Display adhkar cards
+        for adhkar in adhkar_to_display:
+            display_adhkar_card(adhkar)
     
-    elif st.session_state.active_tab == "favorites":
-        if not st.session_state.favorites:
+    # Favorites Tab
+    with tabs[1]:
+        favorite_adhkar = [adhkar for adhkar in adhkar_data if adhkar['id'] in st.session_state.favorites]
+        
+        if not favorite_adhkar:
             st.markdown("""
-            <div class="section" style="text-align: center; padding: 3rem;">
+            <div class="empty-state">
+                <div class="empty-icon">❤️</div>
                 <h3>لا توجد أذكار مفضلة</h3>
-                <p style="color: #4a5568;">أضف أذكارك المفضلة لتظهر هنا</p>
+                <p>أضف أذكارك المفضلة لتظهر هنا</p>
             </div>
             """, unsafe_allow_html=True)
         else:
-            st.markdown(f"### أذكارك المفضلة ({len(st.session_state.favorites)})")
-            for adhkar_id in st.session_state.favorites:
-                adhkar = df[df['id'] == adhkar_id].iloc[0].to_dict()
-                render_adhkar_card(adhkar)
+            for adhkar in favorite_adhkar:
+                display_adhkar_card(adhkar)
     
-    elif st.session_state.active_tab == "search":
-        st.markdown("### البحث في الأذكار")
-        
-        # Search input
-        search_query = st.text_input("ابحث في الأذكار (عربي أو إنجليزي)", value=st.session_state.search_query, 
-                                    placeholder="اكتب للبحث...", key="search_input")
-        
-        if search_query:
-            st.session_state.search_query = search_query
-            results = search_adhkar(search_query)
-            
-            if results.empty:
-                st.markdown("""
-                <div class="section" style="text-align: center; padding: 3rem;">
-                    <h3>لم يتم العثور على نتائج</h3>
-                    <p style="color: #4a5568;">جرب كلمات بحث مختلفة</p>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"### نتائج البحث ({len(results)})")
-                for idx, row in results.iterrows():
-                    render_adhkar_card(row.to_dict())
-        else:
-            # Show all adhkar when no search query
-            for idx, row in df.iterrows():
-                render_adhkar_card(row.to_dict())
-    
-    # Stats section
-    if st.session_state.active_tab != "search":
-        total_reads = sum(st.session_state.read_counts.values())
-        
+    # Daily Tab
+    with tabs[2]:
         st.markdown("""
-        <div class="stats-container">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h2 style="color: var(--emerald-700); font-size: 2rem; margin-bottom: 1rem;">ذكر اليوم</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col2:
+            if st.button("🎲 ذكر عشوائي", key="random_adhkar"):
+                st.session_state.daily_adhkar = random.choice(adhkar_data)
+                st.rerun()
+        
+        if st.session_state.daily_adhkar:
+            display_adhkar_card(st.session_state.daily_adhkar, featured=True)
+    
+    # Statistics Tab
+    with tabs[3]:
+        total_reads = sum(st.session_state.read_counts.values())
+        favorite_count = len(st.session_state.favorites)
+        total_adhkar = len(adhkar_data)
+        
+        # Stats Cards
+        st.markdown(f"""
+        <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-number">{}</div>
+                <div class="stat-number">{total_reads}</div>
                 <div class="stat-label">إجمالي القراءات</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number">{}</div>
+            <div class="stat-card blue">
+                <div class="stat-number">{favorite_count}</div>
                 <div class="stat-label">الأذكار المفضلة</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-number">{}</div>
+            <div class="stat-card purple">
+                <div class="stat-number">{total_adhkar}</div>
                 <div class="stat-label">إجمالي الأذكار</div>
             </div>
         </div>
-        """.format(total_reads, len(st.session_state.favorites), len(df)), unsafe_allow_html=True)
-    
-    # Footer
-    st.markdown("""
-    <div class="footer">
-        <p>أذكار المسلم الذكي - إحياء سنة الذكر</p>
-        <p>جميع الحقوق محفوظة © {}</p>
-    </div>
-    """.format(datetime.now().year), unsafe_allow_html=True)
-    
-    # JavaScript functions
-    st.markdown("""
-    <script>
-    function setActiveTab(tab) {
-        Streamlit.setComponentValue(tab);
-    }
-    
-    function incrementRead(adhkarId) {
-        Streamlit.setComponentValue("read_" + adhkarId);
-    }
-    
-    function toggleFavorite(adhkarId) {
-        Streamlit.setComponentValue("fav_" + adhkarId);
-    }
-    
-    function copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            alert("تم نسخ الذكر: " + text);
-        });
-    }
-    </script>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+        
+        # Most Read Adhkar
+        if st.session_state.read_counts:
+            st.markdown("### الأذكار الأكثر قراءة")
+            
+            # Sort by read count
+            sorted_reads = sorted(st.session_state.read_counts.items(), key=lambda x: x[1], reverse=True)
+            
+            for adhkar_id, count in sorted_reads[:5]:
+                adhkar = next((a for a in adhkar_data if a['id'] == adhkar_id), None)
+                if adhkar:
+                    st.markdown(f"""
+                    <div class="modern-card" style="margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;">
+                            <div style="flex: 1;">
+                                <p class="arabic-text" style="font-size: 1.3rem; margin-bottom: 0.5rem;">{adhkar['arabic']}</p>
+                                <p style="color: var(--gray-600); font-size: 0.9rem; margin: 0;">{adhkar['translation']}</p>
+                            </div>
+                            <div style="margin-left: 1rem;">
+                                <span style="background: var(--emerald-100); color: var(--emerald-700); padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 0.9rem;">
+                                    {count} مرة
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
-    # Handle component values
-    if 'component_value' not in st.session_state:
-        st.session_state.component_value = None
-    
-    component_value = st.session_state.get('component_value', None)
-    
-    if component_value:
-        if component_value.startswith("read_"):
-            adhkar_id = int(component_value.split("_")[1])
-            increment_read_count(adhkar_id)
-        elif component_value.startswith("fav_"):
-            adhkar_id = int(component_value.split("_")[1])
-            toggle_favorite(adhkar_id)
-        elif component_value in ["ai", "daily", "favorites", "search"]:
-            st.session_state.active_tab = component_value
-        
-        st.session_state.component_value = None
-        st.experimental_rerun()
-    
     main()
