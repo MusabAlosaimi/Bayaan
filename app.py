@@ -35,93 +35,98 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Modern simple CSS
-st.markdown("""
+st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
     
     /* Global Styles */
-    .stApp {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    }
+    :root {{
+        --primary: #2563eb;
+        --primary-light: #dbeafe;
+        --secondary: #8b5cf6;
+        --accent: #10b981;
+        --light: #f8fafc;
+        --dark: #1e293b;
+        --text: #334155;
+        --border: #e2e8f0;
+    }}
     
-    .main-header {
+    .stApp {{
+        background: #f8fafc;
+    }}
+    
+    .main-header {{
         background: white;
-        padding: 3rem 2rem;
-        border-radius: 24px;
-        margin-bottom: 2rem;
-        text-align: center;
-        color: #1a202c;
-        box-shadow: 0 4px 32px rgba(0, 0, 0, 0.06);
-        border: 1px solid rgba(0, 0, 0, 0.05);
-    }
-    
-    .logo-container {
+        padding: 2rem 1.5rem;
+        border-radius: 16px;
         margin-bottom: 1.5rem;
+        text-align: center;
+        color: var(--dark);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--border);
+    }}
+    
+    .logo-container {{
+        margin-bottom: 1rem;
         display: flex;
         justify-content: center;
-    }
+    }}
     
-    .main-header h1 {
-        font-size: 2.5rem;
+    .logo-img {{
+        width: 120px;
+        height: auto;
+        border-radius: 16px;
+    }}
+    
+    .main-header h1 {{
+        font-size: 1.8rem;
         font-weight: 700;
         margin: 0.5rem 0;
-        color: #2d3748;
+        color: var(--dark);
         font-family: 'Amiri', serif;
-    }
+    }}
     
-    .main-header h2 {
-        font-size: 1.5rem;
+    .main-header h2 {{
+        font-size: 1.2rem;
         font-weight: 400;
         margin: 0.5rem 0;
-        color: #718096;
+        color: #64748b;
         font-family: 'Inter', sans-serif;
-    }
+    }}
     
-    .adhkar-card {
+    .card {{
         background: white;
-        padding: 2rem;
+        padding: 1.5rem;
         border-radius: 16px;
-        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
         margin-bottom: 1rem;
-        border: 1px solid rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border);
         direction: rtl;
         text-align: right;
         transition: all 0.2s ease;
-    }
+    }}
     
-    .adhkar-card:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-    }
+    .card:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.06);
+    }}
     
-    .similar-adhkar-card {
-        background: linear-gradient(135deg, #fef7e0, #feebc8);
-        padding: 2rem;
-        border-radius: 16px;
-        box-shadow: 0 2px 16px rgba(237, 137, 54, 0.1);
-        margin-bottom: 1rem;
-        border: 1px solid #fed7aa;
-        direction: rtl;
-        text-align: right;
-        transition: all 0.2s ease;
-    }
+    .highlight-card {{
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        border-left: 4px solid var(--primary);
+    }}
     
-    .similar-adhkar-card:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 24px rgba(237, 137, 54, 0.15);
-    }
-    
-    .adhkar-text {
-        font-size: 1.25rem;
+    .adhkar-text {{
+        font-size: 1.2rem;
         line-height: 1.8;
-        color: #2d3748;
+        color: var(--dark);
         font-family: 'Amiri', serif;
         margin-bottom: 1rem;
         font-weight: 400;
-    }
+    }}
     
-    .similarity-score {
-        background: #10b981;
+    .badge {{
+        background: var(--accent);
         color: white;
         padding: 4px 12px;
         border-radius: 12px;
@@ -130,146 +135,164 @@ st.markdown("""
         display: inline-block;
         margin-left: 8px;
         font-family: 'Inter', sans-serif;
-    }
+    }}
     
-    .category-tag {
-        background: #4f46e5;
+    .tag {{
+        background: var(--primary);
         color: white;
-        padding: 8px 16px;
+        padding: 6px 14px;
         border-radius: 12px;
-        font-size: 0.875rem;
+        font-size: 0.85rem;
         font-weight: 500;
         display: inline-block;
         margin-top: 1rem;
         font-family: 'Inter', sans-serif;
-    }
+    }}
     
-    .search-container {
-        background: white;
-        padding: 2rem;
-        border-radius: 16px;
-        margin-bottom: 2rem;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
-    }
-    
-    .ai-search-container {
-        background: linear-gradient(135deg, #eff6ff, #dbeafe);
-        color: #1e40af;
-        padding: 2rem;
-        border-radius: 16px;
-        margin-bottom: 2rem;
-        border: 1px solid #bfdbfe;
-        box-shadow: 0 2px 16px rgba(59, 130, 246, 0.1);
-    }
-    
-    .sidebar-content {
+    .section {{
         background: white;
         padding: 1.5rem;
+        border-radius: 16px;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
+    }}
+    
+    .section-highlight {{
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border-left: 4px solid var(--accent);
+        color: #166534;
+    }}
+    
+    .sidebar-section {{
+        background: white;
+        padding: 1.25rem;
         border-radius: 16px;
         margin-bottom: 1rem;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
-    }
+        border: 1px solid var(--border);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
+    }}
     
-    .time-based-greeting {
-        background: linear-gradient(135deg, #fff7ed, #fed7aa);
-        padding: 1.5rem;
+    .greeting-card {{
+        background: linear-gradient(135deg, #fffbeb, #fef3c7);
+        padding: 1.25rem;
         border-radius: 16px;
         text-align: center;
-        margin-bottom: 1.5rem;
-        color: #9a3412;
-        border: 1px solid #fdba74;
-        box-shadow: 0 2px 16px rgba(251, 146, 60, 0.1);
-    }
-    
-    .counter-display {
-        background: white;
-        padding: 2rem;
-        border-radius: 16px;
-        text-align: center;
-        margin: 1rem 0;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
-    }
-    
-    .counter-number {
-        font-size: 3rem;
-        font-weight: 700;
-        color: #4f46e5;
-        margin: 1rem 0;
-        font-family: 'Inter', sans-serif;
-    }
-    
-    .random-adhkar {
-        background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
-        padding: 2rem;
-        border-radius: 16px;
-        margin: 1rem 0;
-        text-align: center;
-        color: #7c3aed;
-        border: 1px solid #c4b5fd;
-        box-shadow: 0 2px 16px rgba(139, 92, 246, 0.1);
-    }
-    
-    .stat-box {
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
-        color: white;
-        padding: 2rem;
-        border-radius: 16px;
-        text-align: center;
-        box-shadow: 0 4px 24px rgba(79, 70, 229, 0.25);
-        min-width: 150px;
-        font-family: 'Inter', sans-serif;
-    }
-    
-    .installation-guide {
-        background: linear-gradient(135deg, #fef3c7, #fde68a);
-        padding: 2rem;
-        border-radius: 16px;
-        margin: 1rem 0;
+        margin-bottom: 1.25rem;
+        color: #854d0e;
         border-left: 4px solid #f59e0b;
-        border: 1px solid #fbbf24;
-        box-shadow: 0 2px 16px rgba(245, 158, 11, 0.1);
-    }
+    }}
+    
+    .counter-card {{
+        background: white;
+        padding: 1.25rem;
+        border-radius: 16px;
+        text-align: center;
+        margin: 0.75rem 0;
+        border: 1px solid var(--border);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
+    }}
+    
+    .counter-number {{
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin: 0.75rem 0;
+        font-family: 'Inter', sans-serif;
+    }}
+    
+    .feature-card {{
+        background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+        padding: 1.25rem;
+        border-radius: 16px;
+        margin: 0.75rem 0;
+        text-align: center;
+        color: var(--secondary);
+        border-left: 4px solid var(--secondary);
+    }}
+    
+    .stat-card {{
+        background: white;
+        color: var(--dark);
+        padding: 1.25rem;
+        border-radius: 16px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border);
+        font-family: 'Inter', sans-serif;
+    }}
+    
+    .stat-card h3 {{
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0.5rem 0;
+    }}
     
     /* Button Styles */
-    .stButton > button {
-        background: #4f46e5;
+    .stButton > button {{
+        background: var(--primary);
         color: white;
         border: none;
         border-radius: 12px;
-        padding: 12px 24px;
+        padding: 10px 20px;
         font-weight: 500;
         font-family: 'Inter', sans-serif;
         font-size: 14px;
         transition: all 0.2s ease;
-        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
-    }
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }}
     
-    .stButton > button:hover {
-        background: #4338ca;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
-    }
+    .stButton > button:hover {{
+        background: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+    }}
+    
+    .stButton > button:active {{
+        transform: translateY(0);
+    }}
     
     /* Typography */
-    h1, h2, h3, h4, h5, h6 {
+    h1, h2, h3, h4, h5, h6 {{
         font-family: 'Inter', sans-serif;
         font-weight: 600;
-        color: #2d3748;
-    }
+        color: var(--dark);
+    }}
     
-    p, div, span {
+    p, div, span {{
         font-family: 'Inter', sans-serif;
-        color: #4a5568;
-    }
+        color: var(--text);
+    }}
     
-    /* Remove backdrop-filter for better compatibility */
-    .main-header, .search-container, .sidebar-content, .counter-display {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-    }
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 10px;
+    }}
+    
+    .stTabs [data-baseweb="tab"] {{
+        padding: 8px 16px;
+        border-radius: 12px;
+        background: #e2e8f0;
+        transition: all 0.2s ease;
+    }}
+    
+    .stTabs [aria-selected="true"] {{
+        background: var(--primary);
+        color: white;
+    }}
+    
+    /* Utility */
+    .text-center {{
+        text-align: center;
+    }}
+    
+    .mb-1 {{
+        margin-bottom: 0.5rem;
+    }}
+    
+    .mt-2 {{
+        margin-top: 1rem;
+    }}
 </style>
 
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -432,18 +455,18 @@ def initialize_session_state():
 
 def display_adhkar_card(adhkar_text, category, index, similarity_score=None, is_similar=False):
     """Display a single adhkar card with optional similarity score"""
-    card_class = "similar-adhkar-card" if is_similar else "adhkar-card"
+    card_class = "card highlight-card" if is_similar else "card"
     
     similarity_badge = ""
     if similarity_score is not None:
         similarity_percentage = int(similarity_score * 100)
-        similarity_badge = f'<span class="similarity-score">تشابه: {similarity_percentage}%</span>'
+        similarity_badge = f'<span class="badge">تشابه: {similarity_percentage}%</span>'
     
     with st.container():
         st.markdown(f"""
         <div class="{card_class}">
             <div class="adhkar-text">{adhkar_text}</div>
-            <div class="category-tag">{category}{similarity_badge}</div>
+            <div class="tag">{category}{similarity_badge}</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -474,7 +497,7 @@ def display_adhkar_card(adhkar_text, category, index, similarity_score=None, is_
 def show_installation_guide():
     """Show installation guide for missing dependencies"""
     st.markdown("""
-    <div class="installation-guide">
+    <div class="section section-highlight">
         <h3>🛠️ دليل التثبيت للميزات الذكية</h3>
         <p>لتفعيل الميزات الذكية، يرجى تثبيت المكتبات المطلوبة:</p>
     </div>
@@ -523,35 +546,22 @@ def main():
             st.error("لا يمكن تحميل البيانات. يرجى التأكد من وجود ملف البيانات.")
             return
     
-    # Main header
+    # Main header with logo
     st.markdown(f"""
     <div class="main-header">
         <div class="logo-container">
-            <svg width="80" height="100" viewBox="0 0 200 250" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M100 20 L160 50 Q180 70 180 100 L180 160 Q180 190 160 210 L100 230 L40 210 Q20 190 20 160 L20 100 Q20 70 40 50 L100 20 Z" fill="url(#gradient)" stroke="#C9A96E" stroke-width="3"/>
-                <defs>
-                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style="stop-color:#D4AF37;stop-opacity:1" />
-                        <stop offset="100%" style="stop-color:#B8860B;stop-opacity:1" />
-                    </linearGradient>
-                </defs>
-                <text x="100" y="140" text-anchor="middle" fill="white" font-family="serif" font-size="32" font-weight="bold">بيان</text>
-                <circle cx="100" cy="60" r="8" fill="white" opacity="0.8"/>
-                <circle cx="100" cy="190" r="8" fill="white" opacity="0.8"/>
-                <path d="M70 80 Q100 60 130 80" stroke="white" stroke-width="2" fill="none" opacity="0.6"/>
-                <path d="M70 170 Q100 190 130 170" stroke="white" stroke-width="2" fill="none" opacity="0.6"/>
-            </svg>
+            <img src="https://via.placeholder.com/120x120/2563eb/ffffff?text=BAYAAN" class="logo-img" alt="Bayaan Logo">
         </div>
         <h1>بيان - أذكار المسلم</h1>
         <h2>Bayaan - Islamic Adhkar</h2>
-        <p style="font-size: 16px; margin-top: 12px; opacity: 0.8;">اذكروا الله كثيراً لعلكم تفلحون</p>
+        <p class="text-center mb-1">اذكروا الله كثيراً لعلكم تفلحون</p>
     </div>
     """, unsafe_allow_html=True)
     
     # Time-based greeting
     greeting, time_period = get_time_based_greeting()
     st.markdown(f"""
-    <div class="time-based-greeting">
+    <div class="greeting-card">
         <h3>{greeting}</h3>
     </div>
     """, unsafe_allow_html=True)
@@ -559,7 +569,7 @@ def main():
     # Sidebar
     with st.sidebar:
         st.markdown("""
-        <div class="sidebar-content">
+        <div class="sidebar-section">
             <h2>🤖 النموذج الذكي</h2>
         </div>
         """, unsafe_allow_html=True)
@@ -578,14 +588,14 @@ def main():
             st.error("❌ scikit-learn غير مثبت")
         
         st.markdown("""
-        <div class="sidebar-content">
+        <div class="sidebar-section">
             <h2>📊 إحصائياتك اليومية</h2>
         </div>
         """, unsafe_allow_html=True)
         
         # Daily statistics
         st.markdown(f"""
-        <div class="counter-display">
+        <div class="counter-card">
             <h3>🎯 عداد الأذكار اليوم</h3>
             <div class="counter-number">{st.session_state.daily_adhkar_count}</div>
             <p>ذكر مقروء اليوم</p>
@@ -593,7 +603,7 @@ def main():
         """, unsafe_allow_html=True)
         
         st.markdown(f"""
-        <div class="counter-display">
+        <div class="counter-card">
             <h3>📈 إجمالي الأذكار</h3>
             <div class="counter-number">{st.session_state.counter}</div>
             <p>إجمالي الأذكار المقروءة</p>
@@ -608,7 +618,7 @@ def main():
         
         # Random adhkar
         st.markdown("""
-        <div class="sidebar-content">
+        <div class="sidebar-section">
             <h3>🎯 ذكر مقترح</h3>
         </div>
         """, unsafe_allow_html=True)
@@ -628,26 +638,26 @@ def main():
                 if not smart_results.empty:
                     smart_adhkar = smart_results.iloc[0]
                     st.markdown(f"""
-                    <div class="random-adhkar">
+                    <div class="feature-card">
                         <div class="adhkar-text">{smart_adhkar['clean_text']}</div>
-                        <div class="category-tag">{smart_adhkar['category']} 
-                        <span class="similarity-score">ذكي 🤖</span></div>
+                        <div class="tag">{smart_adhkar['category']} 
+                        <span class="badge">ذكي 🤖</span></div>
                     </div>
                     """, unsafe_allow_html=True)
                 else:
                     random_adhkar = df.sample(1).iloc[0]
                     st.markdown(f"""
-                    <div class="random-adhkar">
+                    <div class="feature-card">
                         <div class="adhkar-text">{random_adhkar['clean_text']}</div>
-                        <div class="category-tag">{random_adhkar['category']}</div>
+                        <div class="tag">{random_adhkar['category']}</div>
                     </div>
                     """, unsafe_allow_html=True)
             else:
                 random_adhkar = df.sample(1).iloc[0]
                 st.markdown(f"""
-                <div class="random-adhkar">
+                <div class="feature-card">
                     <div class="adhkar-text">{random_adhkar['clean_text']}</div>
-                    <div class="category-tag">{random_adhkar['category']}</div>
+                    <div class="tag">{random_adhkar['category']}</div>
                 </div>
                 """, unsafe_allow_html=True)
     
@@ -672,7 +682,7 @@ def main():
     if SKLEARN_AVAILABLE and vectorizer is not None:
         with tab1:
             st.markdown("""
-            <div class="ai-search-container">
+            <div class="section section-highlight">
                 <h3>🤖 البحث الذكي بالذكاء الاصطناعي</h3>
                 <p>ابحث بالمعنى وليس فقط بالكلمات الدقيقة</p>
             </div>
@@ -693,15 +703,15 @@ def main():
                     if similar_text:
                         st.success(f"✨ تم العثور على دعاء مناسب في فئة: **{category}**")
                         st.markdown(f"""
-                        <div class="similar-adhkar-card">
+                        <div class="card highlight-card">
                             <div class="adhkar-text">{similar_text}</div>
-                            <div class="category-tag">{category} <span class="similarity-score">مناسب 🎯</span></div>
+                            <div class="tag">{category} <span class="badge">مناسب 🎯</span></div>
                         </div>
                         """, unsafe_allow_html=True)
                     else:
                         st.info(category)
             
-            st.markdown("---")
+            st.divider()
             
             # Semantic search
             semantic_query = st.text_input(
@@ -782,7 +792,7 @@ def main():
     # Traditional Search Tab
     with traditional_tab:
         st.markdown("""
-        <div class="search-container">
+        <div class="section">
             <h3>🔍 البحث في الأذكار</h3>
         </div>
         """, unsafe_allow_html=True)
@@ -861,12 +871,12 @@ def main():
                     else:
                         st.info("لا توجد اقتراحات ذكية متاحة حالياً")
             
-            st.markdown("---")
+            st.divider()
             st.markdown("### 📚 أذكارك المفضلة:")
             
             for i, adhkar in enumerate(st.session_state.favorite_adhkar):
                 st.markdown(f"""
-                <div class="adhkar-card">
+                <div class="card">
                     <div class="adhkar-text">{adhkar}</div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -910,7 +920,7 @@ def main():
         
         with col1:
             st.markdown(f"""
-            <div class="stat-box">
+            <div class="stat-card">
                 <h3>{len(df)}</h3>
                 <p>إجمالي الأذكار</p>
             </div>
@@ -918,7 +928,7 @@ def main():
         
         with col2:
             st.markdown(f"""
-            <div class="stat-box">
+            <div class="stat-card">
                 <h3>{len(df['category'].unique())}</h3>
                 <p>عدد الفئات</p>
             </div>
@@ -926,7 +936,7 @@ def main():
         
         with col3:
             st.markdown(f"""
-            <div class="stat-box">
+            <div class="stat-card">
                 <h3>{st.session_state.daily_adhkar_count}</h3>
                 <p>أذكار اليوم</p>
             </div>
@@ -934,7 +944,7 @@ def main():
         
         with col4:
             st.markdown(f"""
-            <div class="stat-box">
+            <div class="stat-card">
                 <h3>{len(st.session_state.favorite_adhkar)}</h3>
                 <p>المفضلة</p>
             </div>
@@ -976,7 +986,7 @@ def main():
         
         if not SKLEARN_AVAILABLE:
             show_installation_guide()
-            st.markdown("---")
+            st.divider()
         
         st.markdown(f"""
         ### 🕌 بيان - أذكار المسلم
@@ -1039,9 +1049,8 @@ def main():
         - `tfidf_vectorizer.pkl` - النموذج الذكي المدرب
         
         #### 🎨 التصميم:
-        - تصميم حديث مستوحى من iOS
+        - تصميم حديث مستوحى من Material Design
         - واجهة عربية RTL مع خطوط Amiri
-        - تأثيرات Glassmorphism و Backdrop Blur
         - ألوان متدرجة وانتقالات سلسة
         - تجربة مستخدم محسنة للأجهزة المحمولة
         
@@ -1055,25 +1064,11 @@ def main():
         ---
         
         #### 🚀 الميزات الجديدة:
-        - **البحث الذكي المحسن** باستخدام خوارزمية التشابه المخصصة
-        - **البحث عن الدعاء المناسب** - أدخل حالتك واحصل على الدعاء الأنسب
-        - **تصميم iOS الحديث** مع تأثيرات بصرية متقدمة
-        - **واجهة متجاوبة** تعمل بسلاسة على جميع الأجهزة
-        - **تحليلات ذكية** للفئات والنصوص
-        - **توصيات مخصصة** بناءً على تفضيلاتك
-        
-        #### 📞 الدعم التقني:
-        - إذا واجهت مشاكل في التثبيت، تأكد من إصدارات المكتبات
-        - للمساعدة في النموذج الذكي، تأكد من وجود ملف النموذج
-        - التطبيق يعمل بدون الميزات الذكية إذا لم تكن متاحة
-        - التصميم محسن للعرض على الأجهزة المحمولة وأجهزة سطح المكتب
-        
-        #### 🔧 كيفية الاستخدام:
-        1. **للبحث العادي**: استخدم تبويب "البحث التقليدي"
-        2. **للبحث الذكي**: استخدم تبويب "البحث الذكي" وأدخل وصف حالتك
-        3. **للحصول على توصيات**: استخدم الشريط الجانبي للحصول على اقتراحات
-        4. **لحفظ المفضلة**: اضغط على زر "مفضلة" في أي ذكر تريد حفظه
-        5. **للأذكار المشابهة**: اضغط على زر "مشابه" للعثور على أذكار ذات معنى قريب
+        - **تصميم مبسط وحديث** مع التركيز على المحتوى
+        - **ألوان أكثر هدوءًا** مع تدرجات خفيفة
+        - **مساحات بيضاء أكثر** لتحسين القراءة
+        - **بطاقات أكثر بساطة** مع حدود أنحف وظلال خفيفة
+        - **تحسين الأداء** مع تقليل التعقيد
         """)
 
 if __name__ == "__main__":
