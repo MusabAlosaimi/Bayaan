@@ -1,4 +1,13 @@
 import streamlit as st
+
+# Page configuration MUST be first
+st.set_page_config(
+    page_title="أذكار المسلم - Islamic Adhkar AI",
+    page_icon="🕌",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -14,18 +23,9 @@ try:
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
-    st.warning("⚠️ scikit-learn not installed. AI features will be disabled. Install with: pip install scikit-learn")
 
 import warnings
 warnings.filterwarnings('ignore')
-
-# Page configuration
-st.set_page_config(
-    page_title="أذكار المسلم - Islamic Adhkar AI",
-    page_icon="🕌",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 # Custom CSS for beautiful styling
 st.markdown("""
@@ -428,6 +428,10 @@ pip install streamlit pandas numpy scikit-learn
     """)
 
 def main():
+    # Show sklearn warning after page config if needed
+    if not SKLEARN_AVAILABLE:
+        st.warning("⚠️ scikit-learn not installed. AI features will be disabled. Install with: pip install scikit-learn")
+    
     # Initialize session state
     initialize_session_state()
     
