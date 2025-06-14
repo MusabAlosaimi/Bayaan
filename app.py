@@ -215,18 +215,6 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(175, 82, 222, 0.1);
     }
     
-    .ml-insights {
-        background: linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(88, 86, 214, 0.1));
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        color: #1d1d1f;
-        padding: 24px;
-        border-radius: 16px;
-        margin: 16px 0;
-        border: 1px solid rgba(0, 122, 255, 0.2);
-        box-shadow: 0 4px 20px rgba(0, 122, 255, 0.1);
-    }
-    
     .stat-box {
         background: linear-gradient(135deg, #FF2D92, #FF6B35);
         color: white;
@@ -268,117 +256,6 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 8px 32px rgba(0, 122, 255, 0.4);
     }
-    
-    /* Tab Styles */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-radius: 16px;
-        padding: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        background: transparent;
-        border-radius: 12px;
-        color: #8E8E93;
-        font-weight: 500;
-        font-family: 'SF Pro Display', sans-serif;
-        transition: all 0.3s ease;
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background: #007AFF !important;
-        color: white !important;
-        box-shadow: 0 4px 20px rgba(0, 122, 255, 0.3);
-    }
-    
-    /* Input Styles */
-    .stTextInput > div > div > input {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
-        padding: 12px 16px;
-        font-family: 'SF Pro Display', sans-serif;
-        font-size: 16px;
-        color: #1d1d1f;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-    
-    .stSelectbox > div > div > div {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-    
-    /* Slider Styles */
-    .stSlider > div > div > div > div {
-        background: linear-gradient(135deg, #007AFF, #5856D6);
-    }
-    
-    /* Success/Error Messages */
-    .stSuccess {
-        background: linear-gradient(135deg, rgba(52, 199, 89, 0.1), rgba(48, 209, 88, 0.1));
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(52, 199, 89, 0.2);
-        border-radius: 12px;
-        color: #1d1d1f;
-    }
-    
-    .stError {
-        background: linear-gradient(135deg, rgba(255, 59, 48, 0.1), rgba(255, 45, 85, 0.1));
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 59, 48, 0.2);
-        border-radius: 12px;
-        color: #1d1d1f;
-    }
-    
-    .stWarning {
-        background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 204, 0, 0.1));
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 149, 0, 0.2);
-        border-radius: 12px;
-        color: #1d1d1f;
-    }
-    
-    .stInfo {
-        background: linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(88, 86, 214, 0.1));
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(0, 122, 255, 0.2);
-        border-radius: 12px;
-        color: #1d1d1f;
-    }
-    
-    /* Sidebar Styling */
-    .css-1d391kg {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-    }
-    
-    /* Typography */
-    h1, h2, h3, h4, h5, h6 {
-        font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-        font-weight: 600;
-        color: #1d1d1f;
-    }
-    
-    p, div, span {
-        font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-        color: #1d1d1f;
-    }
 </style>
 
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -408,9 +285,8 @@ def load_data():
         st.error(f"خطأ في تحميل البيانات: {e}")
         return pd.DataFrame()
 
-@st.cache_resource
-def load_model_and_data():
-    """Load model and data using your method"""
+def load_model_and_vectorizer():
+    """Load model and data using joblib"""
     try:
         vectorizer = joblib.load("tfidf_vectorizer.pkl")
         df = pd.read_csv("adhkar_df.csv")
@@ -419,7 +295,7 @@ def load_model_and_data():
         st.error(f"خطأ في تحميل النموذج: {e}")
         return None, pd.DataFrame()
 
-# Function to find the most similar dua using your method
+# Function to find the most similar dua
 def find_similar_dua(user_dua, vectorizer, adhkar_df):
     clean_dua = remove_tashkeel(user_dua.strip())
     if not clean_dua:
@@ -436,31 +312,17 @@ def find_similar_dua(user_dua, vectorizer, adhkar_df):
     
     return adhkar_df.iloc[best_idx]['category'], adhkar_df.iloc[best_idx]['text']
 
-@st.cache_data
-def get_tfidf_matrix(_vectorizer, texts):
-    """Get TF-IDF matrix for texts"""
-    if not SKLEARN_AVAILABLE or _vectorizer is None:
-        return None
-    
-    try:
-        return _vectorizer.transform(texts)
-    except Exception as e:
-        st.error(f"خطأ في معالجة النصوص: {e}")
-        return None
-
-def semantic_search(query, vectorizer, tfidf_matrix, df, top_k=5):
+def semantic_search(query, vectorizer, df, top_k=5):
     """Perform semantic search using TF-IDF similarity"""
-    if not SKLEARN_AVAILABLE:
-        return pd.DataFrame(), []
-    
     try:
-        if vectorizer is None or tfidf_matrix is None:
+        if vectorizer is None:
             return pd.DataFrame(), []
         
-        # Transform query
+        # Transform query and data
         query_vector = vectorizer.transform([query])
+        tfidf_matrix = vectorizer.transform(df['clean_text'])
         
-        # Calculate cosine similarity using your manual method
+        # Calculate cosine similarity using manual method
         similarities = manual_cosine_similarity(query_vector, tfidf_matrix)
         
         # Get top k most similar adhkar
@@ -481,13 +343,10 @@ def semantic_search(query, vectorizer, tfidf_matrix, df, top_k=5):
         st.error(f"خطأ في البحث الدلالي: {e}")
         return pd.DataFrame(), []
 
-def find_similar_adhkar(adhkar_text, vectorizer, tfidf_matrix, df, top_k=3):
+def find_similar_adhkar(adhkar_text, vectorizer, df, top_k=3):
     """Find similar adhkar to a given adhkar"""
-    if not SKLEARN_AVAILABLE:
-        return pd.DataFrame(), []
-    
     try:
-        if vectorizer is None or tfidf_matrix is None:
+        if vectorizer is None:
             return pd.DataFrame(), []
             
         # Find the index of current adhkar
@@ -497,8 +356,9 @@ def find_similar_adhkar(adhkar_text, vectorizer, tfidf_matrix, df, top_k=3):
         
         current_idx = current_idx[0]
         
-        # Get similarity with all other adhkar using your manual method
-        current_vector = tfidf_matrix[current_idx:current_idx+1]  # Keep as matrix
+        # Get similarity with all other adhkar
+        current_vector = vectorizer.transform([adhkar_text])
+        tfidf_matrix = vectorizer.transform(df['clean_text'])
         similarities = manual_cosine_similarity(current_vector, tfidf_matrix)
         
         # Remove self-similarity and get top k
@@ -519,41 +379,6 @@ def find_similar_adhkar(adhkar_text, vectorizer, tfidf_matrix, df, top_k=3):
     except Exception as e:
         st.error(f"خطأ في العثور على أذكار مشابهة: {e}")
         return pd.DataFrame(), []
-
-def get_category_insights(df, vectorizer, tfidf_matrix):
-    """Get ML insights about categories"""
-    if not SKLEARN_AVAILABLE:
-        return {}
-    
-    try:
-        if vectorizer is None or tfidf_matrix is None:
-            return {}
-        
-        insights = {}
-        categories = df['category'].unique()
-        
-        # Calculate average TF-IDF scores for each category
-        for category in categories:
-            category_mask = df['category'] == category
-            category_tfidf = tfidf_matrix[category_mask]
-            if category_tfidf.shape[0] > 0:
-                avg_tfidf = np.mean(category_tfidf.toarray(), axis=0)
-                # Get top features for this category
-                feature_names = vectorizer.get_feature_names_out()
-                top_features_idx = avg_tfidf.argsort()[-5:][::-1]
-                top_features = [feature_names[idx] for idx in top_features_idx]
-                top_scores = [avg_tfidf[idx] for idx in top_features_idx]
-                
-                insights[category] = {
-                    'top_features': top_features,
-                    'scores': top_scores,
-                    'count': sum(category_mask)
-                }
-        
-        return insights
-    except Exception as e:
-        st.error(f"خطأ في تحليل الفئات: {e}")
-        return {}
 
 def get_time_based_greeting():
     """Get appropriate greeting based on current time"""
@@ -658,18 +483,14 @@ def main():
     # Initialize session state
     initialize_session_state()
     
-    # Load data and model using your method
-    vectorizer, df = load_model_and_data()
+    # Load data and model
+    vectorizer, df = load_model_and_vectorizer()
     
     if df.empty:
-        st.error("لا يمكن تحميل البيانات. يرجى التأكد من وجود ملف البيانات.")
-        return
-    
-    # Get TF-IDF matrix
-    tfidf_matrix = None
-    if vectorizer is not None and SKLEARN_AVAILABLE:
-        with st.spinner("🤖 جاري تحضير النموذج الذكي..."):
-            tfidf_matrix = get_tfidf_matrix(vectorizer, df['clean_text'].tolist())
+        df = load_data()  # Fallback to regular data loading
+        if df.empty:
+            st.error("لا يمكن تحميل البيانات. يرجى التأكد من وجود ملف البيانات.")
+            return
     
     # Main header
     ai_status = "🤖 مفعل" if (SKLEARN_AVAILABLE and vectorizer is not None) else "❌ غير متاح"
@@ -736,7 +557,7 @@ def main():
             st.session_state.daily_adhkar_count = 0
             st.success("تم إعادة تعيين العداد")
         
-        # AI-powered or random adhkar
+        # Random adhkar
         st.markdown("""
         <div class="sidebar-content">
             <h3>🎯 ذكر مقترح</h3>
@@ -744,7 +565,7 @@ def main():
         """, unsafe_allow_html=True)
         
         if st.button("🎯 احصل على ذكر"):
-            if SKLEARN_AVAILABLE and vectorizer is not None and tfidf_matrix is not None:
+            if SKLEARN_AVAILABLE and vectorizer is not None:
                 # Get time-based recommendation
                 current_hour = datetime.now().hour
                 if 5 <= current_hour < 12:
@@ -754,7 +575,7 @@ def main():
                 else:
                     query = "نوم"
                 
-                smart_results, similarities = semantic_search(query, vectorizer, tfidf_matrix, df, top_k=1)
+                smart_results, similarities = semantic_search(query, vectorizer, df, top_k=1)
                 if not smart_results.empty:
                     smart_adhkar = smart_results.iloc[0]
                     st.markdown(f"""
@@ -783,12 +604,11 @@ def main():
     
     # Main content tabs
     if SKLEARN_AVAILABLE and vectorizer is not None:
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
             "🤖 البحث الذكي", 
             "🔍 البحث التقليدي", 
             "⭐ المفضلة", 
-            "📊 تحليلات ذكية", 
-            "🎯 توصيات", 
+            "📊 الإحصائيات",
             "ℹ️ حول التطبيق"
         ])
     else:
@@ -809,7 +629,7 @@ def main():
             </div>
             """, unsafe_allow_html=True)
             
-            # Smart Dua Finder using your method
+            # Smart Dua Finder
             st.markdown("### 🎯 البحث عن الدعاء المناسب")
             user_dua = st.text_input(
                 "🤲 أدخل دعاءك أو وصف حالتك:", 
@@ -830,7 +650,7 @@ def main():
                         </div>
                         """, unsafe_allow_html=True)
                     else:
-                        st.info(category)  # Will show the error message
+                        st.info(category)
             
             st.markdown("---")
             
@@ -850,7 +670,7 @@ def main():
             if semantic_query:
                 with st.spinner("🤖 جاري البحث الذكي..."):
                     semantic_results, similarities = semantic_search(
-                        semantic_query, vectorizer, tfidf_matrix, df, top_k=search_depth
+                        semantic_query, vectorizer, df, top_k=search_depth
                     )
                     
                     if not semantic_results.empty:
@@ -887,7 +707,7 @@ def main():
                 with cols[i % 3]:
                     if st.button(quick_search, key=f"quick_{i}"):
                         semantic_results, similarities = semantic_search(
-                            quick_search, vectorizer, tfidf_matrix, df, top_k=3
+                            quick_search, vectorizer, df, top_k=3
                         )
                         if not semantic_results.empty:
                             st.write(f"**نتائج: {quick_search}**")
@@ -903,8 +723,7 @@ def main():
         traditional_tab = tab2
         favorites_tab = tab3
         analytics_tab = tab4
-        recommendations_tab = tab5
-        about_tab = tab6
+        about_tab = tab5
     else:
         traditional_tab = tab1
         favorites_tab = tab2
@@ -968,12 +787,12 @@ def main():
             st.success(f"لديك {len(st.session_state.favorite_adhkar)} ذكر في المفضلة")
             
             # AI-powered similar favorites (only if sklearn available)
-            if SKLEARN_AVAILABLE and vectorizer is not None and tfidf_matrix is not None:
+            if SKLEARN_AVAILABLE and vectorizer is not None:
                 if st.button("🤖 اقتراحات ذكية بناءً على المفضلة"):
                     all_suggestions = []
-                    for fav_adhkar in st.session_state.favorite_adhkar[:3]:  # Limit to avoid too many results
+                    for fav_adhkar in st.session_state.favorite_adhkar[:3]:
                         similar_results, similarities = find_similar_adhkar(
-                            fav_adhkar, vectorizer, tfidf_matrix, df, top_k=2
+                            fav_adhkar, vectorizer, df, top_k=2
                         )
                         if not similar_results.empty:
                             for idx, (_, row) in enumerate(similar_results.iterrows()):
@@ -982,7 +801,7 @@ def main():
                     
                     if all_suggestions:
                         st.markdown("### 🤖 اقتراحات ذكية بناءً على مفضلتك:")
-                        for idx, (row, sim) in enumerate(all_suggestions[:5]):  # Show top 5
+                        for idx, (row, sim) in enumerate(all_suggestions[:5]):
                             display_adhkar_card(
                                 row['clean_text'], 
                                 row['category'], 
@@ -1010,10 +829,10 @@ def main():
                         st.rerun()
                 
                 with col2:
-                    if SKLEARN_AVAILABLE and vectorizer is not None and tfidf_matrix is not None:
+                    if SKLEARN_AVAILABLE and vectorizer is not None:
                         if st.button(f"🔍 أذكار مشابهة", key=f"similar_fav_{i}"):
                             similar_results, similarities = find_similar_adhkar(
-                                adhkar, vectorizer, tfidf_matrix, df, top_k=3
+                                adhkar, vectorizer, df, top_k=3
                             )
                             if not similar_results.empty:
                                 st.markdown(f"**أذكار مشابهة ل:** {adhkar[:50]}...")
@@ -1082,34 +901,6 @@ def main():
         for i, (category, count) in enumerate(category_counts.head(5).items(), 1):
             st.write(f"{i}. **{category}**: {count} ذكر")
         
-        # AI Insights (only if sklearn available)
-        if SKLEARN_AVAILABLE and vectorizer is not None and tfidf_matrix is not None:
-            st.markdown("### 🤖 تحليلات ذكية للفئات")
-            
-            with st.spinner("جاري تحليل الفئات..."):
-                insights = get_category_insights(df, vectorizer, tfidf_matrix)
-            
-            if insights:
-                selected_category_for_analysis = st.selectbox(
-                    "اختر فئة للتحليل الذكي:", 
-                    list(insights.keys())
-                )
-                
-                if selected_category_for_analysis in insights:
-                    insight = insights[selected_category_for_analysis]
-                    st.markdown(f"""
-                    <div class="ml-insights">
-                        <h4>📊 تحليل فئة: {selected_category_for_analysis}</h4>
-                        <p><strong>عدد الأذكار:</strong> {insight['count']}</p>
-                        <p><strong>الكلمات الأساسية:</strong></p>
-                        <ul>
-                    """, unsafe_allow_html=True)
-                    
-                    for feature, score in zip(insight['top_features'], insight['scores']):
-                        st.markdown(f"<li>{feature} (أهمية: {score:.3f})</li>", unsafe_allow_html=True)
-                    
-                    st.markdown("</ul></div>", unsafe_allow_html=True)
-        
         # Text length analysis
         st.markdown("### 📏 تحليل أطوال النصوص")
         text_lengths = df['clean_text'].str.len()
@@ -1125,109 +916,10 @@ def main():
         # Text length histogram
         st.markdown("### 📊 توزيع أطوال النصوص")
         hist_data = np.histogram(text_lengths, bins=20)
-        st.bar_chart(pd.DataFrame({
+        chart_df = pd.DataFrame({
             'count': hist_data[0]
-        }))
-    
-    # Recommendations Tab (only if sklearn available)
-    if SKLEARN_AVAILABLE and vectorizer is not None:
-        with recommendations_tab:
-            st.markdown("## 🎯 توصيات ذكية")
-            
-            # Time-based recommendations
-            st.markdown("### ⏰ توصيات حسب الوقت")
-            current_hour = datetime.now().hour
-            
-            if 5 <= current_hour < 12:
-                recommended_query = "صباح"
-                st.info("🌅 الوقت الآن مناسب لأذكار الصباح")
-            elif 18 <= current_hour < 22:
-                recommended_query = "مساء"
-                st.info("🌆 الوقت الآن مناسب لأذكار المساء")
-            elif 22 <= current_hour or current_hour < 5:
-                recommended_query = "نوم"
-                st.info("🌙 الوقت الآن مناسب لأذكار النوم")
-            else:
-                recommended_query = "دعاء"
-                st.info("📿 يمكنك قراءة أي أذكار في هذا الوقت")
-            
-            time_recommendations, time_similarities = semantic_search(
-                recommended_query, vectorizer, tfidf_matrix, df, top_k=3
-            )
-            
-            if not time_recommendations.empty:
-                st.markdown("#### 🤖 الأذكار المقترحة لهذا الوقت:")
-                for idx, (_, row) in enumerate(time_recommendations.iterrows()):
-                    display_adhkar_card(
-                        row['clean_text'], 
-                        row['category'], 
-                        f"time_rec_{idx}",
-                        similarity_score=time_similarities[idx],
-                        is_similar=True
-                    )
-            
-            # Mood-based recommendations
-            st.markdown("### 🎭 توصيات حسب المزاج")
-            mood_options = {
-                "😊 سعيد وممتن": "حمد شكر",
-                "😔 حزين ومهموم": "حزن هم",
-                "😰 قلق وخائف": "خوف أمان",
-                "🤲 راغب في الدعاء": "دعاء استغفار",
-                "🙏 طالب المغفرة": "توبة استغفار",
-                "❤️ محب لله": "حب الله"
-            }
-            
-            selected_mood = st.selectbox("اختر حالتك الحالية:", list(mood_options.keys()))
-            
-            if st.button("🎯 احصل على توصيات للمزاج"):
-                mood_query = mood_options[selected_mood]
-                mood_recommendations, mood_similarities = semantic_search(
-                    mood_query, vectorizer, tfidf_matrix, df, top_k=4
-                )
-                
-                if not mood_recommendations.empty:
-                    st.markdown(f"#### توصيات لحالة: {selected_mood}")
-                    for idx, (_, row) in enumerate(mood_recommendations.iterrows()):
-                        display_adhkar_card(
-                            row['clean_text'], 
-                            row['category'], 
-                            f"mood_rec_{idx}",
-                            similarity_score=mood_similarities[idx],
-                            is_similar=True
-                        )
-            
-            # Personalized recommendations based on favorites
-            if st.session_state.favorite_adhkar:
-                st.markdown("### 💝 توصيات شخصية بناءً على مفضلتك")
-                
-                if st.button("🤖 احصل على توصيات شخصية"):
-                    personal_recommendations = []
-                    
-                    # Analyze favorite adhkar to get personalized recommendations
-                    for fav_adhkar in st.session_state.favorite_adhkar[:2]:
-                        similar_results, similarities = find_similar_adhkar(
-                            fav_adhkar, vectorizer, tfidf_matrix, df, top_k=2
-                        )
-                        
-                        for idx, (_, row) in enumerate(similar_results.iterrows()):
-                            if row['clean_text'] not in st.session_state.favorite_adhkar:
-                                personal_recommendations.append((row, similarities[idx]))
-                    
-                    if personal_recommendations:
-                        # Sort by similarity and show top recommendations
-                        personal_recommendations.sort(key=lambda x: x[1], reverse=True)
-                        
-                        st.markdown("#### 🎯 توصيات مخصصة لك:")
-                        for idx, (row, sim) in enumerate(personal_recommendations[:4]):
-                            display_adhkar_card(
-                                row['clean_text'], 
-                                row['category'], 
-                                f"personal_rec_{idx}",
-                                similarity_score=sim,
-                                is_similar=True
-                            )
-                    else:
-                        st.info("لا توجد توصيات شخصية متاحة حالياً")
+        })
+        st.bar_chart(chart_df)
     
     # About Tab
     with about_tab:
@@ -1333,7 +1025,7 @@ def main():
         #### 🔧 كيفية الاستخدام:
         1. **للبحث العادي**: استخدم تبويب "البحث التقليدي"
         2. **للبحث الذكي**: استخدم تبويب "البحث الذكي" وأدخل وصف حالتك
-        3. **للحصول على توصيات**: تفحص تبويب "التوصيات" للحصول على اقتراحات حسب الوقت والمزاج
+        3. **للحصول على توصيات**: استخدم الشريط الجانبي للحصول على اقتراحات
         4. **لحفظ المفضلة**: اضغط على زر "مفضلة" في أي ذكر تريد حفظه
         5. **للأذكار المشابهة**: اضغط على زر "مشابه" للعثور على أذكار ذات معنى قريب
         """)
