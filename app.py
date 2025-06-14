@@ -15,6 +15,10 @@ import random
 import pickle
 from collections import Counter
 import re
+import base64
+
+# Logo path - replace with your actual logo path
+LOGO_PATH = "logo.png"  # Update this with your logo file path
 
 # Try to import optional dependencies
 try:
@@ -34,22 +38,34 @@ except ImportError:
 import warnings
 warnings.filterwarnings('ignore')
 
-# Modern React-style CSS
-st.markdown("""
+def get_logo_base64(path):
+    """Convert image to base64 for embedding in HTML"""
+    try:
+        with open(path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except Exception:
+        return ""
+
+LOGO_BASE64 = get_logo_base64(LOGO_PATH)
+
+# Modern React-style CSS with Navy theme
+st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
     
-    /* Modern React-style Variables */
-    :root {
-        --emerald-50: #ecf3fd;
-        --emerald-100: #d1d4fa;
-        --emerald-500: #1021b9;
-        --emerald-600: #063594;
-        --emerald-700: #060357;
-        --emerald-800: #07063d;
-        --teal-50: #f0fdfa;
-        --teal-500: #1466b8;
-        --teal-600: #0d2894;
+    /* Navy theme Variables */
+    :root {{
+        --navy-50: #f0f4ff;
+        --navy-100: #d6e0ff;
+        --navy-200: #b3c6ff;
+        --navy-300: #8aa8ff;
+        --navy-400: #6d8eff;
+        --navy-500: #0a2463;
+        --navy-600: #071a4d;
+        --navy-700: #051337;
+        --navy-800: #030d21;
+        --gold-100: #fdf6e3;
+        --gold-500: #d4af37;
         --gray-50: #f9fafb;
         --gray-100: #f3f4f6;
         --gray-300: #d1d5db;
@@ -65,52 +81,70 @@ st.markdown("""
         --red-100: #fee2e2;
         --red-500: #ef4444;
         --white: #ffffff;
-    }
+    }}
     
     /* Global Styles */
-    .stApp {
-        background: linear-gradient(135deg, var(--emerald-50) 0%, var(--white) 50%, var(--teal-50) 100%);
+    .stApp {{
+        background: linear-gradient(135deg, var(--navy-50) 0%, var(--white) 50%, #e6f0ff 100%);
         min-height: 100vh;
-    }
+    }}
     
     /* Hide default Streamlit elements */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    header {{visibility: hidden;}}
     
     /* Modern Header */
-    .modern-header {
-        background: linear-gradient(135deg, var(--emerald-600) 0%, var(--teal-600) 100%);
+    .modern-header {{
+        background: linear-gradient(135deg, var(--navy-500) 0%, var(--navy-700) 100%);
         color: white;
-        padding: 2rem 0;
+        padding: 1.5rem 0;
         margin: -1rem -1rem 2rem -1rem;
-        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
-    }
+        box-shadow: 0 10px 25px rgba(10, 36, 99, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }}
     
-    .header-content {
+    .header-content {{
         max-width: 1200px;
         margin: 0 auto;
         padding: 0 2rem;
-        text-align: center;
-    }
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }}
     
-    .header-title {
-        font-size: 2.5rem;
+    .logo-container {{
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }}
+    
+    .logo-img {{
+        height: 60px;
+        width: auto;
+        border-radius: 8px;
+    }}
+    
+    .header-title {{
+        font-size: 2.2rem;
         font-weight: 700;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.3rem;
         font-family: 'Amiri', serif;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        color: white;
+    }}
     
-    .header-subtitle {
-        font-size: 1.2rem;
+    .header-subtitle {{
+        font-size: 1.1rem;
         color: rgba(255, 255, 255, 0.9);
         font-family: 'Inter', sans-serif;
         font-weight: 300;
-    }
+    }}
     
     /* Modern Tabs */
-    .modern-tabs {
+    .modern-tabs {{
         display: flex;
         background: var(--white);
         border-radius: 12px;
@@ -118,9 +152,9 @@ st.markdown("""
         margin-bottom: 2rem;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         border: 1px solid var(--gray-100);
-    }
+    }}
     
-    .tab-button {
+    .tab-button {{
         flex: 1;
         padding: 12px 20px;
         background: transparent;
@@ -136,26 +170,26 @@ st.markdown("""
         align-items: center;
         justify-content: center;
         gap: 8px;
-    }
+    }}
     
-    .tab-button.active {
-        background: var(--emerald-600);
+    .tab-button.active {{
+        background: var(--navy-500);
         color: white;
-        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
-    }
+        box-shadow: 0 2px 4px rgba(10, 36, 99, 0.3);
+    }}
     
-    .tab-button:hover:not(.active) {
-        background: var(--emerald-50);
-        color: var(--emerald-700);
-    }
+    .tab-button:hover:not(.active) {{
+        background: var(--navy-50);
+        color: var(--navy-700);
+    }}
     
     /* Modern Search */
-    .search-container {
+    .search-container {{
         position: relative;
         margin-bottom: 2rem;
-    }
+    }}
     
-    .search-icon {
+    .search-icon {{
         position: absolute;
         left: 16px;
         top: 50%;
@@ -163,10 +197,10 @@ st.markdown("""
         color: var(--gray-400);
         font-size: 1.2rem;
         z-index: 2;
-    }
+    }}
     
     /* Modern Cards */
-    .modern-card {
+    .modern-card {{
         background: var(--white);
         border-radius: 16px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -174,38 +208,38 @@ st.markdown("""
         margin-bottom: 1.5rem;
         overflow: hidden;
         transition: all 0.3s ease;
-    }
+    }}
     
-    .modern-card:hover {
+    .modern-card:hover {{
         transform: translateY(-4px);
         box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
-        border-color: var(--emerald-200);
-    }
+        border-color: var(--navy-200);
+    }}
     
-    .featured-card {
-        border: 2px solid var(--emerald-500);
-        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
-    }
+    .featured-card {{
+        border: 2px solid var(--navy-500);
+        box-shadow: 0 8px 25px rgba(10, 36, 99, 0.2);
+    }}
     
-    .card-header {
+    .card-header {{
         padding: 1.5rem 1.5rem 1rem 1.5rem;
-    }
+    }}
     
-    .card-content {
+    .card-content {{
         padding: 0 1.5rem 1.5rem 1.5rem;
-    }
+    }}
     
-    .card-actions {
+    .card-actions {{
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-top: 1rem;
         padding-top: 1rem;
         border-top: 1px solid var(--gray-100);
-    }
+    }}
     
     /* Category Badges */
-    .category-badge {
+    .category-badge {{
         display: inline-block;
         padding: 6px 12px;
         border-radius: 20px;
@@ -213,33 +247,33 @@ st.markdown("""
         font-weight: 600;
         font-family: 'Inter', sans-serif;
         text-transform: capitalize;
-    }
+    }}
     
-    .badge-morning { background: var(--yellow-100); color: var(--yellow-800); }
-    .badge-evening { background: #f3e8ff; color: #7c3aed; }
-    .badge-general { background: #dbeafe; color: #1d4ed8; }
-    .badge-istighfar { background: var(--emerald-100); color: var(--emerald-800); }
-    .badge-protection { background: var(--red-100); color: #dc2626; }
+    .badge-morning {{ background: var(--yellow-100); color: var(--yellow-800); }}
+    .badge-evening {{ background: #f3e8ff; color: #7c3aed; }}
+    .badge-general {{ background: #dbeafe; color: #1d4ed8; }}
+    .badge-istighfar {{ background: var(--navy-100); color: var(--navy-800); }}
+    .badge-protection {{ background: var(--red-100); color: #dc2626; }}
     
     /* Arabic Text */
-    .arabic-text {
+    .arabic-text {{
         font-family: 'Amiri', serif;
         font-size: 1.8rem;
         line-height: 1.8;
-        color: var(--emerald-800);
+        color: var(--navy-700);
         margin-bottom: 1rem;
         text-align: right;
         direction: rtl;
-    }
+    }}
     
-    .translation {
+    .translation {{
         color: var(--gray-700);
         font-size: 1rem;
         line-height: 1.6;
-    }
+    }}
     
     /* Modern Buttons */
-    .modern-button {
+    .modern-button {{
         display: inline-flex;
         align-items: center;
         gap: 8px;
@@ -252,134 +286,144 @@ st.markdown("""
         cursor: pointer;
         transition: all 0.3s ease;
         text-decoration: none;
-    }
+    }}
     
-    .btn-primary {
-        background: var(--emerald-600);
+    .btn-primary {{
+        background: var(--navy-500);
         color: white;
-    }
+    }}
     
-    .btn-primary:hover {
-        background: var(--emerald-700);
+    .btn-primary:hover {{
+        background: var(--navy-600);
         transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
-    }
+        box-shadow: 0 4px 8px rgba(10, 36, 99, 0.3);
+    }}
     
-    .btn-ghost {
+    .btn-ghost {{
         background: transparent;
         color: var(--gray-500);
         border: 1px solid var(--gray-200);
-    }
+    }}
     
-    .btn-ghost:hover {
+    .btn-ghost:hover {{
         background: var(--gray-50);
         color: var(--gray-700);
-    }
+    }}
     
-    .btn-ghost.active {
+    .btn-ghost.active {{
         color: var(--red-500);
         border-color: var(--red-200);
-    }
+    }}
     
     /* Stats Cards */
-    .stats-grid {
+    .stats-grid {{
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 1.5rem;
         margin-bottom: 2rem;
-    }
+    }}
     
-    .stat-card {
-        background: linear-gradient(135deg, var(--emerald-500) 0%, var(--teal-500) 100%);
+    .stat-card {{
+        background: linear-gradient(135deg, var(--navy-500) 0%, var(--navy-700) 100%);
         color: white;
         padding: 1.5rem;
         border-radius: 12px;
         text-align: center;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
+    }}
     
-    .stat-card.blue {
+    .stat-card.blue {{
         background: linear-gradient(135deg, var(--blue-500) 0%, #6366f1 100%);
-    }
+    }}
     
-    .stat-card.purple {
+    .stat-card.purple {{
         background: linear-gradient(135deg, var(--purple-500) 0%, #ec4899 100%);
-    }
+    }}
     
-    .stat-number {
+    .stat-card.gold {{
+        background: linear-gradient(135deg, var(--gold-500) 0%, #c9a227 100%);
+    }}
+    
+    .stat-number {{
         font-size: 2.5rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
-    }
+    }}
     
-    .stat-label {
+    .stat-label {{
         font-size: 1.1rem;
         opacity: 0.9;
-    }
+    }}
     
     /* Reward Box */
-    .reward-box {
-        background: var(--emerald-50);
-        border: 1px solid var(--emerald-100);
+    .reward-box {{
+        background: var(--navy-50);
+        border: 1px solid var(--navy-100);
         border-radius: 8px;
         padding: 1rem;
         margin: 1rem 0;
-    }
+    }}
     
-    .reward-text {
-        color: var(--emerald-800);
+    .reward-text {{
+        color: var(--navy-800);
         font-size: 0.9rem;
         line-height: 1.5;
-    }
+    }}
     
     /* Empty State */
-    .empty-state {
+    .empty-state {{
         text-align: center;
         padding: 3rem;
         color: var(--gray-500);
-    }
+    }}
     
-    .empty-icon {
+    .empty-icon {{
         font-size: 4rem;
         margin-bottom: 1rem;
         opacity: 0.3;
-    }
+    }}
     
     /* Responsive */
-    @media (max-width: 768px) {
-        .header-title {
-            font-size: 2rem;
-        }
+    @media (max-width: 768px) {{
+        .header-title {{
+            font-size: 1.8rem;
+        }}
         
-        .header-subtitle {
-            font-size: 1rem;
-        }
+        .header-subtitle {{
+            font-size: 0.9rem;
+        }}
         
-        .arabic-text {
+        .arabic-text {{
             font-size: 1.5rem;
-        }
+        }}
         
-        .modern-tabs {
+        .modern-tabs {{
             flex-direction: column;
             gap: 4px;
-        }
+        }}
         
-        .stats-grid {
+        .stats-grid {{
             grid-template-columns: 1fr;
-        }
-    }
+        }}
+        
+        .header-content {{
+            flex-direction: column;
+            text-align: center;
+            gap: 10px;
+        }}
+    }}
     
     /* Streamlit overrides */
-    .stTabs [data-baseweb="tab-list"] {
+    .stTabs [data-baseweb="tab-list"] {{
         display: none;
-    }
+    }}
     
-    .stTabs [data-baseweb="tab-panel"] {
+    .stTabs [data-baseweb="tab-panel"] {{
         padding: 0;
-    }
+    }}
     
-    .stButton > button {
-        background: var(--emerald-600) !important;
+    .stButton > button {{
+        background: var(--navy-500) !important;
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
@@ -389,32 +433,32 @@ st.markdown("""
         font-family: 'Inter', sans-serif !important;
         font-size: 0.95rem !important;
         width: 100% !important;
-    }
+    }}
     
-    .stButton > button:hover {
-        background: var(--emerald-700) !important;
+    .stButton > button:hover {{
+        background: var(--navy-600) !important;
         transform: translateY(-1px) !important;
-        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3) !important;
-    }
+        box-shadow: 0 4px 8px rgba(10, 36, 99, 0.3) !important;
+    }}
     
     /* Active tab styling */
-    .stButton > button:focus {
-        background: var(--emerald-700) !important;
-        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
-    }
+    .stButton > button:focus {{
+        background: var(--navy-700) !important;
+        box-shadow: 0 0 0 2px rgba(10, 36, 99, 0.2) !important;
+    }}
     
-    .stTextInput > div > div > input {
+    .stTextInput > div > div > input {{
         border-radius: 12px !important;
         border: 2px solid var(--gray-200) !important;
         padding: 12px 16px 12px 40px !important;
         font-size: 1.1rem !important;
         transition: all 0.3s ease !important;
-    }
+    }}
     
-    .stTextInput > div > div > input:focus {
-        border-color: var(--emerald-500) !important;
-        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
-    }
+    .stTextInput > div > div > input:focus {{
+        border-color: var(--navy-500) !important;
+        box-shadow: 0 0 0 3px rgba(10, 36, 99, 0.1) !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -643,7 +687,7 @@ def display_adhkar_card(adhkar_row, similarity_score=None, is_similar=False):
         similarity_percentage = int(similarity_score * 100)
         st.markdown(f"""
                 <div style="margin-top: 8px; width: 100%; text-align: center;">
-                    <span style="background: var(--emerald-100); color: var(--emerald-700); padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">
+                    <span style="background: var(--navy-100); color: var(--navy-700); padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">
                         تشابه: {similarity_percentage}%
                     </span>
                 </div>
@@ -702,13 +746,23 @@ def main():
             st.error("لا يمكن تحميل البيانات. يرجى التأكد من وجود ملف البيانات.")
             return
     
-    # Modern Header
+    # Modern Header with Logo
     ai_status = "🤖 مفعل" if (SKLEARN_AVAILABLE and vectorizer is not None) else "❌ غير متاح"
+    
+    logo_html = ""
+    if LOGO_BASE64:
+        logo_html = f'<img src="data:image/png;base64,{LOGO_BASE64}" class="logo-img" alt="App Logo">'
+    
     st.markdown(f"""
     <div class="modern-header">
         <div class="header-content">
-            <h1 class="header-title">أذكار المسلم الذكي</h1>
-            <p class="header-subtitle">Islamic Adhkar AI - الذكاء الاصطناعي: {ai_status}</p>
+            <div class="logo-container">
+                {logo_html}
+                <div>
+                    <h1 class="header-title">أذكار المسلم الذكي</h1>
+                    <p class="header-subtitle">Islamic Adhkar AI - الذكاء الاصطناعي: {ai_status}</p>
+                </div>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -918,7 +972,7 @@ def main():
         
         with col3:
             st.markdown(f"""
-            <div class="stat-card">
+            <div class="stat-card gold">
                 <div class="stat-number">{st.session_state.daily_adhkar_count}</div>
                 <div class="stat-label">أذكار اليوم</div>
             </div>
