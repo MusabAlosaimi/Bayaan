@@ -677,7 +677,6 @@ pip install streamlit pandas numpy scikit-learn joblib
     
     st.markdown("""
     **الميزات المتاحة بعد التثبيت:**
-    - 🤖 البحث الذكي بالمعنى
     - 🔍 العثور على أذكار مشابهة
     - 📊 تحليلات ذكية للفئات
     - 🎯 توصيات مخصصة
@@ -723,11 +722,7 @@ def main():
     """, unsafe_allow_html=True)
     
     # Tab selection buttons
-    col1, col2, col3, col4, col5 = st.columns(5)
-    
-    with col1:
-        if st.button("🔍 البحث", key="tab_search", use_container_width=True):
-            st.session_state.active_tab = 'search'
+    col2, col3, col4, col5 = st.columns(5)
     
     with col2:
         if st.button("🤖 الذكي", key="tab_ai", use_container_width=True):
