@@ -15,6 +15,7 @@ import random
 import pickle
 from collections import Counter
 import re
+import joblib
 
 # Try to import scikit-learn, fallback gracefully if not available
 try:
@@ -27,164 +28,375 @@ except ImportError:
 import warnings
 warnings.filterwarnings('ignore')
 
-# Custom CSS for beautiful styling
+# Modern iOS-style CSS
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=SF+Pro+Display:wght@300;400;500;600;700&display=swap');
+    
+    /* Global Styles */
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+    
     .main-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
         padding: 2rem;
-        border-radius: 10px;
+        border-radius: 20px;
         margin-bottom: 2rem;
         text-align: center;
-        color: white;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        color: #1d1d1f;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
     .ai-badge {
-        background: linear-gradient(45deg, #ff6b6b, #feca57);
+        background: linear-gradient(135deg, #007AFF, #5856D6);
         color: white;
-        padding: 0.3rem 0.8rem;
-        border-radius: 15px;
-        font-size: 0.8rem;
-        font-weight: bold;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
         display: inline-block;
-        margin-left: 0.5rem;
+        margin-left: 12px;
+        font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
     .adhkar-card {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        margin-bottom: 1rem;
-        border-right: 4px solid #667eea;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 24px;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
         direction: rtl;
         text-align: right;
+        transition: all 0.3s ease;
+    }
+    
+    .adhkar-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
     }
     
     .similar-adhkar-card {
-        background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        margin-bottom: 1rem;
-        border-right: 4px solid #e17055;
+        background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 59, 48, 0.1));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 24px;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(255, 149, 0, 0.2);
+        margin-bottom: 16px;
+        border: 1px solid rgba(255, 149, 0, 0.3);
         direction: rtl;
         text-align: right;
+        transition: all 0.3s ease;
+    }
+    
+    .similar-adhkar-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(255, 149, 0, 0.3);
     }
     
     .adhkar-text {
-        font-size: 1.3rem;
-        line-height: 2;
-        color: #2c3e50;
+        font-size: 18px;
+        line-height: 1.8;
+        color: #1d1d1f;
         font-family: 'Amiri', serif;
-        margin-bottom: 1rem;
+        margin-bottom: 16px;
+        font-weight: 400;
     }
     
     .similarity-score {
-        background: linear-gradient(45deg, #00b894, #00cec9);
+        background: linear-gradient(135deg, #34C759, #30D158);
         color: white;
-        padding: 0.2rem 0.6rem;
+        padding: 4px 12px;
         border-radius: 12px;
-        font-size: 0.8rem;
+        font-size: 12px;
+        font-weight: 600;
         display: inline-block;
-        margin-left: 0.5rem;
+        margin-left: 8px;
+        font-family: 'SF Pro Display', sans-serif;
     }
     
     .category-tag {
-        background: linear-gradient(45deg, #667eea, #764ba2);
+        background: linear-gradient(135deg, #007AFF, #5856D6);
         color: white;
-        padding: 0.3rem 1rem;
-        border-radius: 20px;
-        font-size: 0.9rem;
+        padding: 8px 16px;
+        border-radius: 16px;
+        font-size: 14px;
+        font-weight: 500;
         display: inline-block;
-        margin-top: 0.5rem;
+        margin-top: 12px;
+        font-family: 'SF Pro Display', sans-serif;
     }
     
     .search-container {
-        background: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 10px;
-        margin-bottom: 2rem;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 24px;
+        border-radius: 16px;
+        margin-bottom: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
     
     .ai-search-container {
-        background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
-        color: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        margin-bottom: 2rem;
+        background: linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(88, 86, 214, 0.1));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        color: #1d1d1f;
+        padding: 24px;
+        border-radius: 16px;
+        margin-bottom: 24px;
+        border: 1px solid rgba(0, 122, 255, 0.2);
+        box-shadow: 0 4px 20px rgba(0, 122, 255, 0.1);
     }
     
     .sidebar-content {
-        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        margin-bottom: 1rem;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 20px;
+        border-radius: 16px;
+        margin-bottom: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
     
     .time-based-greeting {
-        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-        padding: 1rem;
-        border-radius: 10px;
+        background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 204, 0, 0.1));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 20px;
+        border-radius: 16px;
         text-align: center;
-        margin-bottom: 1rem;
-        color: #333;
+        margin-bottom: 20px;
+        color: #1d1d1f;
+        border: 1px solid rgba(255, 149, 0, 0.2);
+        box-shadow: 0 4px 20px rgba(255, 149, 0, 0.1);
     }
     
     .counter-display {
-        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-        padding: 2rem;
-        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 24px;
+        border-radius: 16px;
         text-align: center;
-        margin: 1rem 0;
+        margin: 16px 0;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
     
     .counter-number {
-        font-size: 3rem;
-        font-weight: bold;
-        color: #2c3e50;
-        margin: 1rem 0;
+        font-size: 48px;
+        font-weight: 700;
+        color: #007AFF;
+        margin: 16px 0;
+        font-family: 'SF Pro Display', sans-serif;
     }
     
     .random-adhkar {
-        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-        padding: 2rem;
-        border-radius: 10px;
-        margin: 1rem 0;
+        background: linear-gradient(135deg, rgba(175, 82, 222, 0.1), rgba(255, 45, 85, 0.1));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 24px;
+        border-radius: 16px;
+        margin: 16px 0;
         text-align: center;
-        color: #333;
+        color: #1d1d1f;
+        border: 1px solid rgba(175, 82, 222, 0.2);
+        box-shadow: 0 4px 20px rgba(175, 82, 222, 0.1);
     }
     
     .ml-insights {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        margin: 1rem 0;
+        background: linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(88, 86, 214, 0.1));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        color: #1d1d1f;
+        padding: 24px;
+        border-radius: 16px;
+        margin: 16px 0;
+        border: 1px solid rgba(0, 122, 255, 0.2);
+        box-shadow: 0 4px 20px rgba(0, 122, 255, 0.1);
     }
     
     .stat-box {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: linear-gradient(135deg, #FF2D92, #FF6B35);
         color: white;
-        padding: 1.5rem;
-        border-radius: 10px;
+        padding: 24px;
+        border-radius: 16px;
         text-align: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        box-shadow: 0 8px 32px rgba(255, 45, 146, 0.3);
         min-width: 150px;
+        font-family: 'SF Pro Display', sans-serif;
     }
     
     .installation-guide {
-        background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        margin: 1rem 0;
-        border-left: 4px solid #e17055;
+        background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 59, 48, 0.1));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 24px;
+        border-radius: 16px;
+        margin: 16px 0;
+        border-left: 4px solid #FF9500;
+        border: 1px solid rgba(255, 149, 0, 0.2);
+        box-shadow: 0 4px 20px rgba(255, 149, 0, 0.1);
+    }
+    
+    /* Button Styles */
+    .stButton > button {
+        background: linear-gradient(135deg, #007AFF, #5856D6);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-weight: 600;
+        font-family: 'SF Pro Display', sans-serif;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0, 122, 255, 0.3);
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(0, 122, 255, 0.4);
+    }
+    
+    /* Tab Styles */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 16px;
+        padding: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: transparent;
+        border-radius: 12px;
+        color: #8E8E93;
+        font-weight: 500;
+        font-family: 'SF Pro Display', sans-serif;
+        transition: all 0.3s ease;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: #007AFF !important;
+        color: white !important;
+        box-shadow: 0 4px 20px rgba(0, 122, 255, 0.3);
+    }
+    
+    /* Input Styles */
+    .stTextInput > div > div > input {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-family: 'SF Pro Display', sans-serif;
+        font-size: 16px;
+        color: #1d1d1f;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    
+    .stSelectbox > div > div > div {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    
+    /* Slider Styles */
+    .stSlider > div > div > div > div {
+        background: linear-gradient(135deg, #007AFF, #5856D6);
+    }
+    
+    /* Success/Error Messages */
+    .stSuccess {
+        background: linear-gradient(135deg, rgba(52, 199, 89, 0.1), rgba(48, 209, 88, 0.1));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(52, 199, 89, 0.2);
+        border-radius: 12px;
+        color: #1d1d1f;
+    }
+    
+    .stError {
+        background: linear-gradient(135deg, rgba(255, 59, 48, 0.1), rgba(255, 45, 85, 0.1));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 59, 48, 0.2);
+        border-radius: 12px;
+        color: #1d1d1f;
+    }
+    
+    .stWarning {
+        background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 204, 0, 0.1));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 149, 0, 0.2);
+        border-radius: 12px;
+        color: #1d1d1f;
+    }
+    
+    .stInfo {
+        background: linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(88, 86, 214, 0.1));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(0, 122, 255, 0.2);
+        border-radius: 12px;
+        color: #1d1d1f;
+    }
+    
+    /* Sidebar Styling */
+    .css-1d391kg {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+    
+    /* Typography */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-weight: 600;
+        color: #1d1d1f;
+    }
+    
+    p, div, span {
+        font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: #1d1d1f;
     }
 </style>
 
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)
+
+# Clean Arabic text by removing diacritics
+def remove_tashkeel(text):
+    tashkeel_pattern = re.compile(r'[\u064B-\u065F\u0670]')
+    return tashkeel_pattern.sub('', text)
+
+# Manual cosine similarity function
+def manual_cosine_similarity(a, b):
+    a_dense = a.toarray().flatten()
+    b_dense = b.toarray()
+    dot_products = np.dot(b_dense, a_dense)
+    a_norm = np.linalg.norm(a_dense)
+    b_norms = np.linalg.norm(b_dense, axis=1)
+    return dot_products / (a_norm * b_norms + 1e-10)
 
 @st.cache_data
 def load_data():
@@ -193,25 +405,36 @@ def load_data():
         df = pd.read_csv('adhkar_df.csv')
         return df.dropna()
     except Exception as e:
-        st.error(f"Error loading data: {e}")
+        st.error(f"خطأ في تحميل البيانات: {e}")
         return pd.DataFrame()
 
 @st.cache_resource
-def load_tfidf_model():
-    """Load and cache the TF-IDF vectorizer model"""
-    if not SKLEARN_AVAILABLE:
-        return None
-    
+def load_model_and_data():
+    """Load model and data using your method"""
     try:
-        with open('tfidf_vectorizer.pkl', 'rb') as f:
-            vectorizer = pickle.load(f)
-        return vectorizer
-    except FileNotFoundError:
-        st.warning("⚠️ ملف النموذج غير موجود: tfidf_vectorizer.pkl")
-        return None
+        vectorizer = joblib.load("tfidf_vectorizer.pkl")
+        df = pd.read_csv("adhkar_df.csv")
+        return vectorizer, df
     except Exception as e:
         st.error(f"خطأ في تحميل النموذج: {e}")
-        return None
+        return None, pd.DataFrame()
+
+# Function to find the most similar dua using your method
+def find_similar_dua(user_dua, vectorizer, adhkar_df):
+    clean_dua = remove_tashkeel(user_dua.strip())
+    if not clean_dua:
+        return "❗ الرجاء إدخال دعاء صحيح", ""
+    
+    user_vector = vectorizer.transform([clean_dua])
+    tfidf_matrix = vectorizer.transform(adhkar_df['clean_text'])
+    similarities = manual_cosine_similarity(user_vector, tfidf_matrix)
+    best_idx = similarities.argmax()
+    best_score = similarities[best_idx]
+    
+    if best_score < 0.1:
+        return "❌ لم يتم العثور على دعاء مشابه", ""
+    
+    return adhkar_df.iloc[best_idx]['category'], adhkar_df.iloc[best_idx]['text']
 
 @st.cache_data
 def get_tfidf_matrix(_vectorizer, texts):
@@ -237,8 +460,8 @@ def semantic_search(query, vectorizer, tfidf_matrix, df, top_k=5):
         # Transform query
         query_vector = vectorizer.transform([query])
         
-        # Calculate cosine similarity
-        similarities = cosine_similarity(query_vector, tfidf_matrix).flatten()
+        # Calculate cosine similarity using your manual method
+        similarities = manual_cosine_similarity(query_vector, tfidf_matrix)
         
         # Get top k most similar adhkar
         top_indices = similarities.argsort()[-top_k:][::-1]
@@ -274,9 +497,9 @@ def find_similar_adhkar(adhkar_text, vectorizer, tfidf_matrix, df, top_k=3):
         
         current_idx = current_idx[0]
         
-        # Get similarity with all other adhkar
-        current_vector = tfidf_matrix[current_idx]
-        similarities = cosine_similarity(current_vector, tfidf_matrix).flatten()
+        # Get similarity with all other adhkar using your manual method
+        current_vector = tfidf_matrix[current_idx:current_idx+1]  # Keep as matrix
+        similarities = manual_cosine_similarity(current_vector, tfidf_matrix)
         
         # Remove self-similarity and get top k
         similarities[current_idx] = -1
@@ -413,10 +636,10 @@ def show_installation_guide():
     
     st.code("""
 # تثبيت المكتبات المطلوبة
-pip install scikit-learn
+pip install scikit-learn joblib
 
 # أو تثبيت جميع المتطلبات
-pip install streamlit pandas numpy scikit-learn
+pip install streamlit pandas numpy scikit-learn joblib
     """, language="bash")
     
     st.markdown("""
@@ -435,9 +658,8 @@ def main():
     # Initialize session state
     initialize_session_state()
     
-    # Load data and model
-    df = load_data()
-    vectorizer = load_tfidf_model() if SKLEARN_AVAILABLE else None
+    # Load data and model using your method
+    vectorizer, df = load_model_and_data()
     
     if df.empty:
         st.error("لا يمكن تحميل البيانات. يرجى التأكد من وجود ملف البيانات.")
@@ -446,15 +668,16 @@ def main():
     # Get TF-IDF matrix
     tfidf_matrix = None
     if vectorizer is not None and SKLEARN_AVAILABLE:
-        with st.spinner("جاري تحضير النموذج الذكي..."):
+        with st.spinner("🤖 جاري تحضير النموذج الذكي..."):
             tfidf_matrix = get_tfidf_matrix(vectorizer, df['clean_text'].tolist())
     
     # Main header
     ai_status = "🤖 مفعل" if (SKLEARN_AVAILABLE and vectorizer is not None) else "❌ غير متاح"
     st.markdown(f"""
     <div class="main-header">
-        <h1>🕌 أذكار المسلم الذكي - Islamic Adhkar AI</h1>
-        <p>اذكروا الله كثيراً لعلكم تفلحون</p>
+        <h1>🕌 أذكار المسلم الذكي</h1>
+        <h2>Islamic Adhkar AI</h2>
+        <p style="font-size: 18px; margin-top: 16px;">اذكروا الله كثيراً لعلكم تفلحون</p>
         <span class="ai-badge">الذكاء الاصطناعي: {ai_status}</span>
     </div>
     """, unsafe_allow_html=True)
@@ -586,9 +809,34 @@ def main():
             </div>
             """, unsafe_allow_html=True)
             
+            # Smart Dua Finder using your method
+            st.markdown("### 🎯 البحث عن الدعاء المناسب")
+            user_dua = st.text_input(
+                "🤲 أدخل دعاءك أو وصف حالتك:", 
+                placeholder="مثال: اللهم اغفر لي، أريد الحماية، أشعر بالخوف...",
+                help="النموذج سيجد الدعاء الأنسب لحالتك"
+            )
+            
+            if user_dua:
+                with st.spinner("🤖 جاري البحث عن الدعاء المناسب..."):
+                    category, similar_text = find_similar_dua(user_dua, vectorizer, df)
+                    
+                    if similar_text:
+                        st.success(f"✨ تم العثور على دعاء مناسب في فئة: **{category}**")
+                        st.markdown(f"""
+                        <div class="similar-adhkar-card">
+                            <div class="adhkar-text">{similar_text}</div>
+                            <div class="category-tag">{category} <span class="similarity-score">مناسب 🎯</span></div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.info(category)  # Will show the error message
+            
+            st.markdown("---")
+            
             # Semantic search
             semantic_query = st.text_input(
-                "🧠 البحث الدلالي", 
+                "🧠 البحث الدلالي المتقدم", 
                 placeholder="مثال: الحماية من الشر، الدعاء للوالدين، الاستغفار...",
                 help="ابحث بالمعنى - النموذج سيفهم قصدك"
             )
@@ -1000,7 +1248,7 @@ def main():
         - ⭐ إمكانية حفظ الأذكار المفضلة
         - 📊 تتبع عدد الأذكار المقروءة
         - 🎯 اقتراحات حسب الوقت
-        - 📱 تصميم متجاوب
+        - 📱 تصميم حديث مستوحى من iOS
         """)
         
         if SKLEARN_AVAILABLE and vectorizer is not None:
@@ -1008,10 +1256,12 @@ def main():
             st.markdown(f"""
             #### 🤖 المميزات الذكية (مفعلة):
             - 🧠 بحث ذكي بالمعنى باستخدام TF-IDF
+            - 🎯 البحث عن الدعاء المناسب لحالتك
             - 🔍 العثور على أذكار مشابهة
             - 📊 تحليلات ذكية للفئات
             - 🎯 توصيات مخصصة
             - 📈 تحليل النصوص بـ {vocab_size:,} كلمة
+            - 🤲 خوارزمية التشابه المحسنة
             """)
         elif SKLEARN_AVAILABLE:
             st.markdown("""
@@ -1021,7 +1271,7 @@ def main():
         else:
             st.markdown("""
             #### ❌ المميزات الذكية (غير متاحة):
-            - يتطلب تثبيت scikit-learn
+            - يتطلب تثبيت scikit-learn و joblib
             - راجع دليل التثبيت أعلاه
             """)
         
@@ -1042,12 +1292,20 @@ def main():
         streamlit>=1.28.0
         pandas>=1.5.0
         numpy>=1.24.0
-        scikit-learn>=1.3.0  # للميزات الذكية
+        scikit-learn>=1.3.0
+        joblib>=1.3.0
         ```
         
         #### 📁 الملفات المطلوبة:
         - `adhkar_df.csv` - بيانات الأذكار
-        - `tfidf_vectorizer.pkl` - النموذج الذكي (اختياري)
+        - `tfidf_vectorizer.pkl` - النموذج الذكي المدرب
+        
+        #### 🎨 التصميم:
+        - تصميم حديث مستوحى من iOS
+        - واجهة عربية RTL مع خطوط Amiri
+        - تأثيرات Glassmorphism و Backdrop Blur
+        - ألوان متدرجة وانتقالات سلسة
+        - تجربة مستخدم محسنة للأجهزة المحمولة
         
         ---
         ### 🤲 دعاء
@@ -1058,10 +1316,26 @@ def main():
         
         ---
         
+        #### 🚀 الميزات الجديدة:
+        - **البحث الذكي المحسن** باستخدام خوارزمية التشابه المخصصة
+        - **البحث عن الدعاء المناسب** - أدخل حالتك واحصل على الدعاء الأنسب
+        - **تصميم iOS الحديث** مع تأثيرات بصرية متقدمة
+        - **واجهة متجاوبة** تعمل بسلاسة على جميع الأجهزة
+        - **تحليلات ذكية** للفئات والنصوص
+        - **توصيات مخصصة** بناءً على تفضيلاتك
+        
         #### 📞 الدعم التقني:
         - إذا واجهت مشاكل في التثبيت، تأكد من إصدارات المكتبات
         - للمساعدة في النموذج الذكي، تأكد من وجود ملف النموذج
-        - النطبيق يعمل بدون الميزات الذكية إذا لم تكن متاحة
+        - التطبيق يعمل بدون الميزات الذكية إذا لم تكن متاحة
+        - التصميم محسن للعرض على الأجهزة المحمولة وأجهزة سطح المكتب
+        
+        #### 🔧 كيفية الاستخدام:
+        1. **للبحث العادي**: استخدم تبويب "البحث التقليدي"
+        2. **للبحث الذكي**: استخدم تبويب "البحث الذكي" وأدخل وصف حالتك
+        3. **للحصول على توصيات**: تفحص تبويب "التوصيات" للحصول على اقتراحات حسب الوقت والمزاج
+        4. **لحفظ المفضلة**: اضغط على زر "مفضلة" في أي ذكر تريد حفظه
+        5. **للأذكار المشابهة**: اضغط على زر "مشابه" للعثور على أذكار ذات معنى قريب
         """)
 
 if __name__ == "__main__":
