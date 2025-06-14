@@ -41,15 +41,15 @@ st.markdown("""
     
     /* Modern React-style Variables */
     :root {
-        --emerald-50: #ecfdf5;
-        --emerald-100: #d1fae5;
-        --emerald-500: #10b981;
-        --emerald-600: #059669;
-        --emerald-700: #047857;
-        --emerald-800: #065f46;
+        --emerald-50: #ecf3fd;
+        --emerald-100: #d1d4fa;
+        --emerald-500: #1021b9;
+        --emerald-600: #063594;
+        --emerald-700: #060357;
+        --emerald-800: #07063d;
         --teal-50: #f0fdfa;
-        --teal-500: #14b8a6;
-        --teal-600: #0d9488;
+        --teal-500: #1466b8;
+        --teal-600: #0d2894;
         --gray-50: #f9fafb;
         --gray-100: #f3f4f6;
         --gray-300: #d1d5db;
@@ -230,13 +230,6 @@ st.markdown("""
         margin-bottom: 1rem;
         text-align: right;
         direction: rtl;
-    }
-    
-    .transliteration {
-        font-style: italic;
-        color: var(--gray-600);
-        margin-bottom: 0.5rem;
-        font-size: 1.1rem;
     }
     
     .translation {
@@ -425,8 +418,30 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------------- AI MODEL UTILITIES ----------------------
-@st.cache_resource
+# Clean Arabic text by removing diacritics
+def remove_tashkeel(text):
+    tashkeel_pattern = re.compile(r'[\u064B-\u065F\u0670]')
+    return tashkeel_pattern.sub('', text)
+
+# Manual cosine similarity function
+def manual_cosine_similarity(a, b):
+    a_dense = a.toarray().flatten()
+    b_dense = b.toarray()
+    dot_products = np.dot(b_dense, a_dense)
+    a_norm = np.linalg.norm(a_dense)
+    b_norms = np.linalg.norm(b_dense, axis=1)
+    return dot_products / (a_norm * b_norms + 1e-10)
+
+@st.cache_data
+def load_data():
+    """Load and cache the adhkar data"""
+    try:
+        df = pd.read_csv('adhkar_df.csv')
+        return df.dropna()
+    except Exception as e:
+        st.error(f"خطأ في تحميل البيانات: {e}")
+        return pd.DataFrame()
+
 def load_model_and_vectorizer():
     """Load model and data using joblib if available"""
     try:
@@ -436,209 +451,98 @@ def load_model_and_vectorizer():
             return vectorizer, df
         else:
             # Fallback to pickle if joblib not available
-            with open("tfidf_vectorizer.pkl", "rb") as f:
+            with open("tfidf_vectorizer.pkl", 'rb') as f:
                 vectorizer = pickle.load(f)
             df = pd.read_csv("adhkar_df.csv")
             return vectorizer, df
     except Exception as e:
-        st.error(f"خطأ في تحميل النموذج أو البيانات: {e}")
+        st.error(f"خطأ في تحميل النموذج: {e}")
         return None, pd.DataFrame()
+
+# Function to find the most similar dua
+def find_similar_dua(user_dua, vectorizer, adhkar_df):
+    clean_dua = remove_tashkeel(user_dua.strip())
+    if not clean_dua:
+        return "❗ الرجاء إدخال دعاء صحيح", ""
+    
+    user_vector = vectorizer.transform([clean_dua])
+    tfidf_matrix = vectorizer.transform(adhkar_df['clean_text'])
+    similarities = manual_cosine_similarity(user_vector, tfidf_matrix)
+    best_idx = similarities.argmax()
+    best_score = similarities[best_idx]
+    
+    if best_score < 0.1:
+        return "❌ لم يتم العثور على دعاء مشابه", ""
+    
+    return adhkar_df.iloc[best_idx]['category'], adhkar_df.iloc[best_idx]['text']
 
 def semantic_search(query, vectorizer, df, top_k=5):
     """Perform semantic search using TF-IDF similarity"""
     try:
-        if vectorizer is None or 'text' not in df.columns:
-            raise ValueError("النموذج أو البيانات غير صالحة")
+        if vectorizer is None:
+            return pd.DataFrame(), []
         
         # Transform query and data
-        query_vec = vectorizer.transform([query])
-        tfidf_matrix = vectorizer.transform(df['text'].astype(str))
+        query_vector = vectorizer.transform([query])
+        tfidf_matrix = vectorizer.transform(df['clean_text'])
         
-        # Calculate cosine similarity
-        cosine_similarities = cosine_similarity(query_vec, tfidf_matrix).flatten()
-        top_indices = cosine_similarities.argsort()[::-1][:top_k]
-        return df.iloc[top_indices], cosine_similarities[top_indices]
+        # Calculate cosine similarity using manual method
+        similarities = manual_cosine_similarity(query_vector, tfidf_matrix)
+        
+        # Get top k most similar adhkar
+        top_indices = similarities.argsort()[-top_k:][::-1]
+        top_similarities = similarities[top_indices]
+        
+        # Filter out very low similarities
+        meaningful_indices = [idx for idx, sim in zip(top_indices, top_similarities) if sim > 0.1]
+        meaningful_similarities = [sim for sim in top_similarities if sim > 0.1]
+        
+        if not meaningful_indices:
+            return pd.DataFrame(), []
+            
+        result_df = df.iloc[meaningful_indices].copy()
+        return result_df, meaningful_similarities
+        
     except Exception as e:
-        st.error(f"خطأ في البحث الذكي: {str(e)}")
+        st.error(f"خطأ في البحث الدلالي: {e}")
         return pd.DataFrame(), []
 
-def find_similar_dua(query, vectorizer, df):
-    """Find the most similar dua to a query"""
+def find_similar_adhkar(adhkar_text, vectorizer, df, top_k=3):
+    """Find similar adhkar to a given adhkar"""
     try:
-        df_results, similarities = semantic_search(query, vectorizer, df, top_k=1)
-        if not df_results.empty and similarities[0] > 0.1:
-            return df_results.iloc[0]['category'], df_results.iloc[0]['text']
-    except Exception:
-        pass
-    return None, None
-
-# Sample Adhkar data (enhanced)
-@st.cache_data
-def load_adhkar_data():
-    return [
-        {
-            "id": 1,
-            "arabic": "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ",
-            "transliteration": "Subhan Allah wa bihamdihi",
-            "translation": "Glory is to Allah and praise is to Him",
-            "category": "morning",
-            "source": "Sahih Bukhari",
-            "reward": "Whoever says this 100 times, his sins will be forgiven even if they are like the foam of the sea",
-            "count": 100,
-        },
-        {
-            "id": 2,
-            "arabic": "لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ",
-            "transliteration": "La ilaha illa Allah wahdahu la sharika lahu, lahu al-mulku wa lahu al-hamdu wa huwa 'ala kulli shay'in qadir",
-            "translation": "There is no god but Allah alone, with no partner. His is the dominion and His is the praise, and He is able to do all things",
-            "category": "evening",
-            "source": "Sahih Muslim",
-            "reward": "Whoever says this 10 times, it is as if he freed four slaves from the children of Isma'il",
-            "count": 10,
-        },
-        {
-            "id": 3,
-            "arabic": "اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ",
-            "transliteration": "Allahumma a'inni 'ala dhikrika wa shukrika wa husni 'ibadatika",
-            "translation": "O Allah, help me to remember You, thank You, and worship You in the best manner",
-            "category": "general",
-            "source": "Abu Dawud",
-            "reward": "A comprehensive du'a for spiritual improvement",
-            "count": 1,
-        },
-        {
-            "id": 4,
-            "arabic": "أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ الَّذِي لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ وَأَتُوبُ إِلَيْهِ",
-            "transliteration": "Astaghfir Allah al-'Azeem alladhi la ilaha illa huwa al-Hayy al-Qayyum wa atubu ilayhi",
-            "translation": "I seek forgiveness from Allah the Mighty, whom there is no god but He, the Living, the Eternal, and I repent to Him",
-            "category": "istighfar",
-            "source": "At-Tirmidhi",
-            "reward": "Whoever says this, Allah will forgive him even if he fled from battle",
-            "count": 3,
-        },
-        {
-            "id": 5,
-            "arabic": "بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ",
-            "transliteration": "Bismillah alladhi la yadurru ma'a ismihi shay'un fi al-ardi wa la fi as-sama'i wa huwa as-Sami' al-'Alim",
-            "translation": "In the name of Allah, with whose name nothing on earth or in heaven can cause harm, and He is the All-Hearing, All-Knowing",
-            "category": "protection",
-            "source": "Abu Dawud",
-            "reward": "Protection from harm when said 3 times in morning and evening",
-            "count": 3,
-        },
-    ]
-
-def initialize_session_state():
-    """Initialize session state variables"""
-    if 'favorites' not in st.session_state:
-        st.session_state.favorites = []
-    if 'read_counts' not in st.session_state:
-        st.session_state.read_counts = {}
-    if 'daily_adhkar' not in st.session_state:
-        adhkar_data = load_adhkar_data()
-        st.session_state.daily_adhkar = random.choice(adhkar_data)
-    if 'active_tab' not in st.session_state:
-        st.session_state.active_tab = 'search'
-    if 'counter' not in st.session_state:
-        st.session_state.counter = 0
-    if 'daily_adhkar_count' not in st.session_state:
-        st.session_state.daily_adhkar_count = 0
-
-def get_category_class(category):
-    category_classes = {
-        'morning': 'badge-morning',
-        'evening': 'badge-evening',
-        'general': 'badge-general',
-        'istighfar': 'badge-istighfar',
-        'protection': 'badge-protection',
-    }
-    return category_classes.get(category, 'badge-general')
-
-def display_adhkar_card(adhkar, featured=False, similarity_score=None):
-    """Display a modern adhkar card"""
-    card_class = "modern-card featured-card" if featured else "modern-card"
-    category_class = get_category_class(adhkar['category'])
-    
-    is_favorite = adhkar['id'] in st.session_state.favorites
-    read_count = st.session_state.read_counts.get(adhkar['id'], 0)
-    
-    similarity_badge = ""
-    if similarity_score is not None:
-        similarity_percentage = int(similarity_score * 100)
-        similarity_badge = f'<span style="background: var(--emerald-100); color: var(--emerald-700); padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500; margin-left: 8px;">تشابه: {similarity_percentage}%</span>'
-    
-    st.markdown(f"""
-    <div class="{card_class}">
-        <div class="card-header">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                <span class="category-badge {category_class}">{adhkar['category']} {similarity_badge}</span>
-                <div style="display: flex; gap: 8px;">
-                    {'❤️' if is_favorite else '🤍'}
-                </div>
-            </div>
+        if vectorizer is None:
+            return pd.DataFrame(), []
             
-            <div class="arabic-text">{adhkar['arabic']}</div>
-            <div class="transliteration">{adhkar['transliteration']}</div>
-            <div class="translation">{adhkar['translation']}</div>
-        </div>
+        # Find the index of current adhkar
+        current_idx = df[df['clean_text'] == adhkar_text].index
+        if len(current_idx) == 0:
+            return pd.DataFrame(), []
         
-        <div class="card-content">
-            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--gray-600); margin-bottom: 1rem;">
-                <span>المصدر: {adhkar['source']}</span>
-                <span>العدد المستحب: {adhkar['count']}</span>
-            </div>
+        current_idx = current_idx[0]
+        
+        # Get similarity with all other adhkar
+        current_vector = vectorizer.transform([adhkar_text])
+        tfidf_matrix = vectorizer.transform(df['clean_text'])
+        similarities = manual_cosine_similarity(current_vector, tfidf_matrix)
+        
+        # Remove self-similarity and get top k
+        similarities[current_idx] = -1
+        top_indices = similarities.argsort()[-top_k:][::-1]
+        top_similarities = similarities[top_indices]
+        
+        # Filter meaningful similarities
+        meaningful_indices = [idx for idx, sim in zip(top_indices, top_similarities) if sim > 0.1]
+        meaningful_similarities = [sim for sim in top_similarities if sim > 0.1]
+        
+        if not meaningful_indices:
+            return pd.DataFrame(), []
             
-            <div class="reward-box">
-                <div class="reward-text">
-                    <strong>الفضل:</strong> {adhkar['reward']}
-                </div>
-            </div>
-            
-            <div class="card-actions">
-                <div style="display: flex; gap: 8px;">
-    """, unsafe_allow_html=True)
-    
-    # Action buttons
-    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
-    
-    with col1:
-        if st.button("📖 قرأت هذا الذكر", key=f"read_{adhkar['id']}"):
-            st.session_state.read_counts[adhkar['id']] = st.session_state.read_counts.get(adhkar['id'], 0) + 1
-            st.session_state.counter += 1
-            st.session_state.daily_adhkar_count += 1
-            st.success("✅ تم احتساب القراءة!")
-    
-    with col2:
-        fav_text = "💔 إزالة من المفضلة" if is_favorite else "❤️ إضافة للمفضلة"
-        if st.button(fav_text, key=f"fav_{adhkar['id']}"):
-            if is_favorite:
-                st.session_state.favorites.remove(adhkar['id'])
-                st.success("تم إزالة الذكر من المفضلة")
-            else:
-                st.session_state.favorites.append(adhkar['id'])
-                st.success("✅ تم إضافة الذكر للمفضلة!")
-    
-    with col3:
-        if st.button("📋 نسخ", key=f"copy_{adhkar['id']}"):
-            copy_text = f"{adhkar['arabic']}\n\n{adhkar['transliteration']}\n\n{adhkar['translation']}"
-            st.code(copy_text, language="text")
-    
-    with col4:
-        if st.button("🔍 مشابه", key=f"similar_{adhkar['id']}"):
-            st.session_state.current_adhkar_for_similarity = adhkar['arabic']
-            st.rerun()
-    
-    # Display read count if any
-    if read_count > 0:
-        st.markdown(f"""
-                <div style="margin-top: 8px;">
-                    <span style="background: var(--emerald-100); color: var(--emerald-700); padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">
-                        قُرئ {read_count} مرة
-                    </span>
-                </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("</div></div></div>", unsafe_allow_html=True)
+        result_df = df.iloc[meaningful_indices].copy()
+        return result_df, meaningful_similarities
+        
+    except Exception as e:
+        st.error(f"خطأ في العثور على أذكار مشابهة: {e}")
+        return pd.DataFrame(), []
 
 def get_time_based_greeting():
     """Get appropriate greeting based on current time"""
@@ -653,6 +557,131 @@ def get_time_based_greeting():
     else:
         return "🌙 تصبح على خير - أذكار النوم", "night"
 
+def initialize_session_state():
+    """Initialize session state variables"""
+    if 'counter' not in st.session_state:
+        st.session_state.counter = 0
+    if 'daily_adhkar_count' not in st.session_state:
+        st.session_state.daily_adhkar_count = 0
+    if 'favorite_adhkar' not in st.session_state:
+        st.session_state.favorite_adhkar = []
+    if 'last_date' not in st.session_state:
+        st.session_state.last_date = datetime.now().date()
+    
+    # Reset daily counter if it's a new day
+    if st.session_state.last_date != datetime.now().date():
+        st.session_state.daily_adhkar_count = 0
+        st.session_state.last_date = datetime.now().date()
+
+def get_category_class(category):
+    category_classes = {
+        'morning': 'badge-morning',
+        'evening': 'badge-evening',
+        'general': 'badge-general',
+        'istighfar': 'badge-istighfar',
+        'protection': 'badge-protection',
+    }
+    return category_classes.get(category, 'badge-general')
+
+def display_adhkar_card(adhkar_row, similarity_score=None, is_similar=False):
+    """Display a modern adhkar card with the design from the second code"""
+    category_class = get_category_class(adhkar_row['category'])
+    
+    is_favorite = adhkar_row['text'] in st.session_state.favorite_adhkar
+    read_count = 0  # Placeholder for read counts
+    
+    card_class = "modern-card featured-card" if is_similar else "modern-card"
+    
+    st.markdown(f"""
+    <div class="{card_class}">
+        <div class="card-header">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <span class="category-badge {category_class}">{adhkar_row['category']}</span>
+                <div style="display: flex; gap: 8px;">
+                    {'❤️' if is_favorite else '🤍'}
+                </div>
+            </div>
+            
+            <div class="arabic-text">{adhkar_row['text']}</div>
+        </div>
+        
+        <div class="card-content">
+            <div class="card-actions">
+                <div style="display: flex; gap: 8px; width: 100%;">
+    """, unsafe_allow_html=True)
+    
+    # Action buttons
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+    
+    with col1:
+        if st.button("📖 قرأت هذا الذكر", key=f"read_{adhkar_row.name}"):
+            st.session_state.counter += 1
+            st.session_state.daily_adhkar_count += 1
+            st.success("✅ تم احتساب القراءة!")
+    
+    with col2:
+        fav_text = "💔 إزالة من المفضلة" if is_favorite else "❤️ إضافة للمفضلة"
+        if st.button(fav_text, key=f"fav_{adhkar_row.name}"):
+            if is_favorite:
+                st.session_state.favorite_adhkar.remove(adhkar_row['text'])
+                st.success("تم إزالة الذكر من المفضلة")
+            else:
+                st.session_state.favorite_adhkar.append(adhkar_row['text'])
+                st.success("✅ تم إضافة الذكر للمفضلة!")
+    
+    with col3:
+        if SKLEARN_AVAILABLE and st.button("🔍 مشابه", key=f"similar_{adhkar_row.name}"):
+            st.session_state.current_adhkar_for_similarity = adhkar_row['text']
+            st.rerun()
+    
+    with col4:
+        if st.button("📋 نسخ", key=f"copy_{adhkar_row.name}"):
+            st.code(adhkar_row['text'], language="text")
+    
+    # Display similarity score if available
+    if similarity_score is not None:
+        similarity_percentage = int(similarity_score * 100)
+        st.markdown(f"""
+                <div style="margin-top: 8px; width: 100%; text-align: center;">
+                    <span style="background: var(--emerald-100); color: var(--emerald-700); padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">
+                        تشابه: {similarity_percentage}%
+                    </span>
+                </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("</div></div></div>", unsafe_allow_html=True)
+
+def show_installation_guide():
+    """Show installation guide for missing dependencies"""
+    st.markdown("""
+    <div class="reward-box">
+        <h3>🛠️ دليل التثبيت للميزات الذكية</h3>
+        <p>لتفعيل الميزات الذكية، يرجى تثبيت المكتبات المطلوبة:</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.code("""
+# تثبيت المكتبات المطلوبة
+pip install scikit-learn joblib
+
+# أو تثبيت جميع المتطلبات معاً
+pip install streamlit pandas numpy scikit-learn joblib
+
+# للتثبيت على Streamlit Cloud، أضف إلى requirements.txt:
+# streamlit>=1.28.0
+# pandas>=1.5.0  
+# numpy>=1.24.0
+# scikit-learn>=1.3.0
+# joblib>=1.3.0
+    """, language="bash")
+    
+    st.markdown("""
+    **الميزات المتاحة بعد التثبيت:**
+    - 🔍 العثور على أذكار مشابهة
+    - 📊 تحليلات ذكية للفئات
+    - 🎯 توصيات مخصصة
+    """)
+
 def main():
     # Show warnings after page config if needed
     if not SKLEARN_AVAILABLE:
@@ -664,41 +693,22 @@ def main():
     # Initialize session state
     initialize_session_state()
     
-    # Load AI model and data
-    vectorizer, model_df = load_model_and_vectorizer()
+    # Load data and model
+    vectorizer, df = load_model_and_vectorizer()
     
-    # Load sample data as fallback
-    adhkar_data = load_adhkar_data()
-    
-    # Use model data if available, otherwise use sample data
-    ai_enabled = False
-    if not model_df.empty and vectorizer is not None:
-        st.success("🤖 تم تحميل النموذج الذكي بنجاح!")
-        # Convert model data to format compatible with display
-        converted_data = []
-        for idx, row in model_df.iterrows():
-            converted_data.append({
-                "id": idx + 1,
-                "arabic": row.get('text', row.get('clean_text', '')),
-                "transliteration": f"Dhikr {idx + 1}",
-                "translation": f"Islamic remembrance from {row.get('category', 'general')} category",
-                "category": row.get('category', 'general'),
-                "source": "Islamic Sources",
-                "reward": "Great reward from Allah",
-                "count": 1,
-            })
-        adhkar_data = converted_data
-        ai_enabled = True
-    else:
-        st.warning("⚠️ لم يتم العثور على النموذج الذكي، سيتم استخدام البيانات التجريبية")
+    if df.empty:
+        df = load_data()  # Fallback to regular data loading
+        if df.empty:
+            st.error("لا يمكن تحميل البيانات. يرجى التأكد من وجود ملف البيانات.")
+            return
     
     # Modern Header
-    ai_status = "🤖 مفعل" if ai_enabled else "❌ غير متاح"
+    ai_status = "🤖 مفعل" if (SKLEARN_AVAILABLE and vectorizer is not None) else "❌ غير متاح"
     st.markdown(f"""
     <div class="modern-header">
         <div class="header-content">
             <h1 class="header-title">أذكار المسلم الذكي</h1>
-            <p class="header-subtitle">Muslim Adhkar AI - الذكاء الاصطناعي: {ai_status}</p>
+            <p class="header-subtitle">Islamic Adhkar AI - الذكاء الاصطناعي: {ai_status}</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -712,11 +722,7 @@ def main():
     """, unsafe_allow_html=True)
     
     # Tab selection buttons
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        if st.button("🔍 البحث", key="tab_search", use_container_width=True):
-            st.session_state.active_tab = 'search'
+    col2, col3, col4, col5 = st.columns(4)
     
     with col2:
         if st.button("🤖 الذكي", key="tab_ai", use_container_width=True):
@@ -730,78 +736,43 @@ def main():
         if st.button("📊 الإحصائيات", key="tab_stats", use_container_width=True):
             st.session_state.active_tab = 'stats'
     
+    with col5:
+        if st.button("ℹ️ حول", key="tab_about", use_container_width=True):
+            st.session_state.active_tab = 'about'
+    
     st.markdown("<br>", unsafe_allow_html=True)
     
     # Display content based on active tab
-    if st.session_state.active_tab == 'search':
-        # Search Tab Content
-        st.markdown("### 🔍 البحث في الأذكار")
-        
-        # Modern Search Bar
-        search_query = st.text_input(
-            "",
-            placeholder="ابحث في الأذكار...",
-            label_visibility="collapsed",
-            key="search_input"
-        )
-        
-        # Filter data based on search
-        filtered_adhkar = []
-        if search_query.strip():
-            for adhkar in adhkar_data:
-                searchable_text = f"{adhkar['arabic']} {adhkar['transliteration']} {adhkar['translation']} {adhkar['category']}".lower()
-                if search_query.lower() in searchable_text:
-                    filtered_adhkar.append(adhkar)
-        else:
-            filtered_adhkar = adhkar_data
-        
-        # Display results
-        st.markdown(f"**عدد النتائج: {len(filtered_adhkar)}**")
-        
-        # Display adhkar cards
-        for adhkar in filtered_adhkar:
-            display_adhkar_card(adhkar)
+    if 'active_tab' not in st.session_state:
+        st.session_state.active_tab = 'search'
     
-    elif st.session_state.active_tab == 'ai':
-        # AI Search Tab Content
+    # AI Tab
+    elif st.session_state.active_tab == 'ai' and SKLEARN_AVAILABLE and vectorizer is not None:
         st.markdown("### 🤖 البحث الذكي بالذكاء الاصطناعي")
-        
-        if ai_enabled:
-            st.success("✅ النموذج الذكي جاهز للاستخدام")
-        else:
-            st.warning("⚠️ الميزات الذكية غير متاحة. تأكد من تثبيت المكتبات المطلوبة.")
         
         # Smart Dua Finder
         st.markdown("#### 🎯 البحث عن الدعاء المناسب")
         user_dua = st.text_input(
             "🤲 أدخل دعاءك أو وصف حالتك:", 
             placeholder="مثال: اللهم اغفر لي، أريد الحماية، أشعر بالخوف...",
+            help="النموذج سيجد الدعاء الأنسب لحالتك",
             key="dua_input"
         )
         
         if user_dua:
-            if ai_enabled:
-                with st.spinner("🤖 جاري البحث عن الدعاء المناسب..."):
-                    category, similar_text = find_similar_dua(user_dua, vectorizer, model_df)
-                    
-                    if similar_text:
-                        st.success(f"✨ تم العثور على دعاء مناسب في فئة: **{category}**")
-                        # Create a temporary adhkar entry for display
-                        similar_adhkar = {
-                            "id": 9999,
-                            "arabic": similar_text,
-                            "transliteration": "AI Recommended",
-                            "translation": "Smart match based on your description",
-                            "category": category,
-                            "source": "AI Semantic Search",
-                            "reward": "Recommended by our AI model",
-                            "count": 1
-                        }
-                        display_adhkar_card(similar_adhkar, featured=True)
-                    else:
-                        st.info("❌ لم يتم العثور على دعاء مناسب. جرب وصفًا آخر.")
-            else:
-                st.warning("الميزات الذكية غير متاحة. يرجى تثبيت المكتبات المطلوبة.")
+            with st.spinner("🤖 جاري البحث عن الدعاء المناسب..."):
+                category, similar_text = find_similar_dua(user_dua, vectorizer, df)
+                
+                if similar_text:
+                    st.success(f"✨ تم العثور على دعاء مناسب في فئة: **{category}**")
+                    # Create a temporary row to display the result
+                    result_row = pd.Series({
+                        'text': similar_text,
+                        'category': category
+                    }, name='ai_result')
+                    display_adhkar_card(result_row, is_similar=True)
+                else:
+                    st.info(category)
         
         st.markdown("---")
         
@@ -810,57 +781,110 @@ def main():
         semantic_query = st.text_input(
             "ابحث بالمعنى", 
             placeholder="مثال: الحماية من الشر، الدعاء للوالدين، الاستغفار...",
+            help="ابحث بالمعنى - النموذج سيفهم قصدك",
             key="semantic_input"
         )
         
         col1, col2 = st.columns([1, 1])
         with col1:
-            search_depth = st.selectbox("عدد النتائج", [3, 5, 8, 10], index=1, key="depth_select")
+            search_depth = st.selectbox("عمق البحث", [3, 5, 8, 10], index=1, key="depth_select")
         with col2:
             min_similarity = st.slider("حد التشابه الأدنى", 0.1, 0.8, 0.2, 0.1, key="similarity_slider")
         
         if semantic_query:
-            if ai_enabled:
-                with st.spinner("🤖 جاري البحث الذكي..."):
-                    semantic_results, similarities = semantic_search(
-                        semantic_query, vectorizer, model_df, top_k=search_depth
-                    )
-                    
-                    if not semantic_results.empty:
-                        # Filter by minimum similarity
-                        valid_results = []
-                        for idx, (_, row) in enumerate(semantic_results.iterrows()):
-                            if similarities[idx] >= min_similarity:
-                                valid_results.append({
-                                    "id": row.name,
-                                    "arabic": row.get('text', ''),
-                                    "transliteration": f"نتيجة ذكية #{idx+1}",
-                                    "translation": f"التشابه: {similarities[idx]*100:.1f}%",
-                                    "category": row.get('category', 'unknown'),
-                                    "source": "AI Semantic Search",
-                                    "reward": "Recommended by our AI model",
-                                    "count": 1,
-                                    "similarity": similarities[idx]
-                                })
+            with st.spinner("🤖 جاري البحث الذكي..."):
+                semantic_results, similarities = semantic_search(
+                    semantic_query, vectorizer, df, top_k=search_depth
+                )
+                
+                if not semantic_results.empty:
+                    # Filter by minimum similarity
+                    valid_indices = [i for i, sim in enumerate(similarities) if sim >= min_similarity]
+                    if valid_indices:
+                        filtered_results = semantic_results.iloc[valid_indices]
+                        filtered_similarities = [similarities[i] for i in valid_indices]
                         
-                        if valid_results:
-                            st.success(f"🎯 تم العثور على {len(valid_results)} نتيجة ذكية")
-                            for result in valid_results:
-                                display_adhkar_card(result, similarity_score=result['similarity'])
-                        else:
-                            st.warning("لم يتم العثور على نتائج تتجاوز حد التشابه المحدد")
+                        st.success(f"🎯 تم العثور على {len(filtered_results)} نتيجة ذكية")
+                        
+                        for idx, (_, row) in enumerate(filtered_results.iterrows()):
+                            display_adhkar_card(row, 
+                                              similarity_score=filtered_similarities[idx], 
+                                              is_similar=True)
                     else:
-                        st.info("لم يتم العثور على نتائج. جرب كلمات مختلفة.")
-            else:
-                st.warning("الميزات الذكية غير متاحة. يرجى تثبيت المكتبات المطلوبة.")
+                        st.warning("لم يتم العثور على نتائج تتجاوز حد التشابه المحدد")
+                else:
+                    st.info("لم يتم العثور على نتائج. جرب كلمات مختلفة.")
+        
+        # Quick semantic search buttons
+        st.markdown("### 🚀 بحث سريع")
+        quick_searches = [
+            "الحماية والأمان", "الدعاء للوالدين", "الاستغفار والتوبة", 
+            "الحمد والشكر", "طلب الهداية", "دعاء المريض"
+        ]
+        
+        cols = st.columns(3)
+        for i, quick_search in enumerate(quick_searches):
+            with cols[i % 3]:
+                if st.button(quick_search, key=f"quick_{i}"):
+                    semantic_results, similarities = semantic_search(
+                        quick_search, vectorizer, df, top_k=3
+                    )
+                    if not semantic_results.empty:
+                        st.write(f"**نتائج: {quick_search}**")
+                        for idx, (_, row) in enumerate(semantic_results.iterrows()):
+                            display_adhkar_card(row, 
+                                              similarity_score=similarities[idx],
+                                              is_similar=True)
     
+    # Favorites Tab
     elif st.session_state.active_tab == 'favorites':
-        # Favorites Tab Content
         st.markdown("### ❤️ الأذكار المفضلة")
         
-        favorite_adhkar = [adhkar for adhkar in adhkar_data if adhkar['id'] in st.session_state.favorites]
-        
-        if not favorite_adhkar:
+        if st.session_state.favorite_adhkar:
+            st.success(f"لديك {len(st.session_state.favorite_adhkar)} ذكر في المفضلة")
+            
+            # AI-powered similar favorites (only if sklearn available)
+            if SKLEARN_AVAILABLE and vectorizer is not None:
+                if st.button("🤖 اقتراحات ذكية بناءً على المفضلة", key="smart_suggestions"):
+                    all_suggestions = []
+                    for fav_adhkar in st.session_state.favorite_adhkar[:3]:
+                        similar_results, similarities = find_similar_adhkar(
+                            fav_adhkar, vectorizer, df, top_k=2
+                        )
+                        if not similar_results.empty:
+                            for idx, (_, row) in enumerate(similar_results.iterrows()):
+                                if row['text'] not in st.session_state.favorite_adhkar:
+                                    all_suggestions.append((row, similarities[idx]))
+                    
+                    if all_suggestions:
+                        st.markdown("### 🤖 اقتراحات ذكية بناءً على مفضلتك:")
+                        for idx, (row, sim) in enumerate(all_suggestions[:5]):
+                            display_adhkar_card(row, similarity_score=sim, is_similar=True)
+                    else:
+                        st.info("لا توجد اقتراحات ذكية متاحة حالياً")
+            
+            st.markdown("---")
+            st.markdown("### 📚 أذكارك المفضلة:")
+            
+            for i, adhkar_text in enumerate(st.session_state.favorite_adhkar):
+                # Find the adhkar in the dataframe
+                adhkar_row = df[df['text'] == adhkar_text]
+                if not adhkar_row.empty:
+                    row = adhkar_row.iloc[0]
+                    display_adhkar_card(row)
+                else:
+                    # Create a temporary row if not found in the dataframe
+                    temp_row = pd.Series({
+                        'text': adhkar_text,
+                        'category': 'مفضلة'
+                    }, name=f'fav_{i}')
+                    display_adhkar_card(temp_row)
+            
+            if st.button("🗑️ مسح جميع المفضلة", key="clear_favorites"):
+                st.session_state.favorite_adhkar = []
+                st.success("تم مسح جميع الأذكار المفضلة")
+                st.rerun()
+        else:
             st.markdown("""
             <div class="empty-state">
                 <div class="empty-icon">❤️</div>
@@ -868,68 +892,137 @@ def main():
                 <p>أضف أذكارك المفضلة من قسم البحث لتظهر هنا</p>
             </div>
             """, unsafe_allow_html=True)
-        else:
-            st.success(f"لديك {len(favorite_adhkar)} ذكر في المفضلة")
-            for adhkar in favorite_adhkar:
-                display_adhkar_card(adhkar)
     
+    # Statistics Tab
     elif st.session_state.active_tab == 'stats':
-        # Statistics Tab Content
         st.markdown("### 📊 الإحصائيات والتحليلات")
         
-        total_reads = sum(st.session_state.read_counts.values())
-        favorite_count = len(st.session_state.favorites)
-        total_adhkar = len(adhkar_data)
+        # Overall statistics
+        col1, col2, col3, col4 = st.columns(4)
         
-        # Stats Cards
-        st.markdown(f"""
-        <div class="stats-grid">
+        with col1:
+            st.markdown(f"""
             <div class="stat-card">
-                <div class="stat-number">{st.session_state.counter}</div>
-                <div class="stat-label">إجمالي القراءات</div>
-            </div>
-            <div class="stat-card blue">
-                <div class="stat-number">{favorite_count}</div>
-                <div class="stat-label">الأذكار المفضلة</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">{st.session_state.daily_adhkar_count}</div>
-                <div class="stat-label">قراءات اليوم</div>
-            </div>
-            <div class="stat-card purple">
-                <div class="stat-number">{total_adhkar}</div>
+                <div class="stat-number">{len(df)}</div>
                 <div class="stat-label">إجمالي الأذكار</div>
             </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
         
-        # Most Read Adhkar
-        if st.session_state.read_counts:
-            st.markdown("#### 📈 الأذكار الأكثر قراءة")
-            
-            # Sort by read count
-            sorted_reads = sorted(st.session_state.read_counts.items(), key=lambda x: x[1], reverse=True)
-            
-            for adhkar_id, count in sorted_reads[:5]:
-                adhkar = next((a for a in adhkar_data if a['id'] == adhkar_id), None)
-                if adhkar:
-                    st.markdown(f"""
-                    <div class="modern-card" style="margin-bottom: 1rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;">
-                            <div style="flex: 1;">
-                                <p class="arabic-text" style="font-size: 1.3rem; margin-bottom: 0.5rem;">{adhkar['arabic']}</p>
-                                <p style="color: var(--gray-600); font-size: 0.9rem; margin: 0;">{adhkar['translation']}</p>
-                            </div>
-                            <div style="margin-left: 1rem;">
-                                <span style="background: var(--emerald-100); color: var(--emerald-700); padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 0.9rem;">
-                                    {count} مرة
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+        with col2:
+            st.markdown(f"""
+            <div class="stat-card blue">
+                <div class="stat-number">{len(df['category'].unique())}</div>
+                <div class="stat-label">عدد الفئات</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown(f"""
+            <div class="stat-card">
+                <div class="stat-number">{st.session_state.daily_adhkar_count}</div>
+                <div class="stat-label">أذكار اليوم</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            st.markdown(f"""
+            <div class="stat-card purple">
+                <div class="stat-number">{len(st.session_state.favorite_adhkar)}</div>
+                <div class="stat-label">المفضلة</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Category distribution
+        st.markdown("### 📈 توزيع الأذكار حسب الفئات")
+        category_counts = df['category'].value_counts()
+        st.bar_chart(category_counts.head(10))
+        
+        # Most common categories
+        st.markdown("### 🏆 أكثر الفئات شيوعاً")
+        for i, (category, count) in enumerate(category_counts.head(5).items(), 1):
+            st.write(f"{i}. **{category}**: {count} ذكر")
+        
+        # Text length analysis
+        st.markdown("### 📏 تحليل أطوال النصوص")
+        text_lengths = df['text'].str.len()
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("متوسط الطول", f"{text_lengths.mean():.0f} حرف")
+        with col2:
+            st.metric("أقصر نص", f"{text_lengths.min()} حرف")
+        with col3:
+            st.metric("أطول نص", f"{text_lengths.max()} حرف")
+        
+        # Text length histogram
+        st.markdown("### 📊 توزيع أطوال النصوص")
+        hist_data = np.histogram(text_lengths, bins=20)
+        chart_df = pd.DataFrame({
+            'count': hist_data[0]
+        })
+        st.bar_chart(chart_df)
+    
+    # About Tab
+    elif st.session_state.active_tab == 'about':
+        st.markdown("## ℹ️ حول التطبيق")
+        
+        if not SKLEARN_AVAILABLE:
+            show_installation_guide()
+            st.markdown("---")
+        
+        st.markdown(f"""
+        ### 🕌 تطبيق أذكار المسلم الذكي
+        
+        هذا التطبيق يحتوي على مجموعة شاملة من الأذكار والأدعية الإسلامية المأخوذة من القرآن الكريم والسنة النبوية الشريفة.
+        
+        #### 🌟 المميزات الأساسية:
+        - 📖 أكثر من {len(df)} ذكر ودعاء
+        - 🔍 بحث تقليدي في الأذكار
+        - ⭐ إمكانية حفظ الأذكار المفضلة
+        - 📊 تتبع عدد الأذكار المقروءة
+        - 🎯 اقتراحات حسب الوقت
+        - 📱 تصميم حديث مستوحى من واجهات حديثة
+        """)
+        
+        if SKLEARN_AVAILABLE and vectorizer is not None:
+            vocab_size = len(vectorizer.get_feature_names_out())
+            st.markdown(f"""
+            #### 🤖 المميزات الذكية (مفعلة):
+            - 🧠 بحث ذكي بالمعنى باستخدام TF-IDF
+            - 🎯 البحث عن الدعاء المناسب لحالتك
+            - 🔍 العثور على أذكار مشابهة
+            - 📊 تحليلات ذكية للفئات
+            - 🎯 توصيات مخصصة
+            - 📈 تحليل النصوص بـ {vocab_size:,} كلمة
+            - 🤲 خوارزمية التشابه المحسنة
+            """)
+        elif SKLEARN_AVAILABLE:
+            st.markdown("""
+            #### ⚠️ المميزات الذكية (غير مفعلة):
+            - النموذج غير محمل - تأكد من وجود ملف `tfidf_vectorizer.pkl`
+            """)
         else:
-            st.info("📖 ابدأ بقراءة بعض الأذكار لترى الإحصائيات هنا")
+            st.markdown("""
+            #### ❌ المميزات الذكية (غير متاحة):
+            - يتطلب تثبيت scikit-learn و joblib
+            - راجع دليل التثبيت أعلاه
+            """)
+        
+        st.markdown("""
+        #### 🚀 الميزات الجديدة:
+        - **البحث الذكي المحسن** باستخدام خوارزمية التشابه المخصصة
+        - **البحث عن الدعاء المناسب** - أدخل حالتك واحصل على الدعاء الأنسب
+        - **تصميم حديث** مع تأثيرات بصرية متقدمة
+        - **واجهة متجاوبة** تعمل بسلاسة على جميع الأجهزة
+        - **تحليلات ذكية** للفئات والنصوص
+        - **توصيات مخصصة** بناءً على تفضيلاتك
+        
+        #### 🤲 دعاء
+        
+        *"اللهم اجعل هذا العمل خالصاً لوجهك الكريم، وانفع به المسلمين في كل مكان"*
+        
+        **تذكر:** المداومة على الأذكار خير من الانقطاع عنها
+        """)
 
 if __name__ == "__main__":
     main()
