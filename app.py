@@ -80,11 +80,11 @@ st.markdown("""
     
     /* Modern Header */
     .modern-header {
-        background: linear-gradient(135deg, var(--emerald-600) 0%, var(--teal-600) 100%);
+        background: linear-gradient(135deg, var(--emerald-600) 30%, var(--teal-600) 100%);
         color: white;
         padding: 2rem 0;
         margin: -1rem -1rem 2rem -1rem;
-        box-shadow: 0 10px 25px rgba(96, 165, 250, 0.2);
+        box-shadow: 0 20px 35px rgba(96, 165, 250, 0.2);
     }
     
     .header-content {
@@ -178,13 +178,13 @@ st.markdown("""
     
     .modern-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 20px 35px rgba(0, 0, 0, 0.1);
         border-color: var(--emerald-100);
     }
     
     .featured-card {
         border: 2px solid var(--emerald-500);
-        box-shadow: 0 8px 25px rgba(96, 165, 250, 0.2);
+        box-shadow: 0 8px 35px rgba(96, 165, 250, 0.2);
     }
     
     .card-header {
