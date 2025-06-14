@@ -746,51 +746,6 @@ def main():
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = 'search'
     
-    # Search Tab
-    if st.session_state.active_tab == 'search':
-        st.markdown("### 🔍 البحث في الأذكار")
-        
-        # Traditional search and filter options
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            search_query = st.text_input("🔍 ابحث في الأذكار", placeholder="اكتب كلمة للبحث...", key="search_input")
-        
-        with col2:
-            categories = ['الكل'] + list(df['category'].unique())
-            selected_category = st.selectbox("📂 اختر الفئة", categories, key="category_select")
-        
-        # Filter data based on search and category
-        filtered_df = df.copy()
-        
-        if search_query:
-            filtered_df = filtered_df[
-                filtered_df['text'].str.contains(search_query, na=False) |
-                filtered_df['category'].str.contains(search_query, na=False)
-            ]
-        
-        if selected_category != 'الكل':
-            filtered_df = filtered_df[filtered_df['category'] == selected_category]
-        
-        # Display results
-        st.markdown(f"**عدد النتائج: {len(filtered_df)}**")
-        
-        # Pagination
-        items_per_page = 5
-        total_pages = max(1, len(filtered_df) // items_per_page + (1 if len(filtered_df) % items_per_page > 0 else 0))
-        
-        if total_pages > 1:
-            page = st.selectbox("📄 الصفحة", range(1, total_pages + 1), key="page_select")
-            start_idx = (page - 1) * items_per_page
-            end_idx = start_idx + items_per_page
-            page_df = filtered_df.iloc[start_idx:end_idx]
-        else:
-            page_df = filtered_df
-        
-        # Display adhkar cards
-        for idx, row in page_df.iterrows():
-            display_adhkar_card(row)
-    
     # AI Tab
     elif st.session_state.active_tab == 'ai' and SKLEARN_AVAILABLE and vectorizer is not None:
         st.markdown("### 🤖 البحث الذكي بالذكاء الاصطناعي")
