@@ -4,13 +4,6 @@ import joblib
 import re
 import numpy as np
 
-# Set page configuration
-st.set_page_config(
-    page_title="Dua Similarity Finder",
-    page_icon="📿",
-    layout="centered"
-)
-
 # Clean Arabic text by removing diacritics
 def remove_tashkeel(text):
     tashkeel_pattern = re.compile(r'[\u064B-\u065F\u0670]')
@@ -36,7 +29,7 @@ def load_model_and_data():
 def find_similar_dua(user_dua, vectorizer, adhkar_df):
     clean_dua = remove_tashkeel(user_dua.strip())
     if not clean_dua:
-        return "❗ الرجاء إدخال دعاء صحيح", ""
+        return "❗ الرجاء إدخال دعاء صحيح", "", 0.0
     
     user_vector = vectorizer.transform([clean_dua])
     tfidf_matrix = vectorizer.transform(adhkar_df['clean_text'])
@@ -45,7 +38,7 @@ def find_similar_dua(user_dua, vectorizer, adhkar_df):
     best_score = similarities[best_idx]
 
     if best_score < 0.1:
-        return "❌ لم يتم العثور على دعاء مشابه", ""
+        return "❌ لم يتم العثور على دعاء مشابه", "", 0.0
     
     return adhkar_df.iloc[best_idx]['category'], adhkar_df.iloc[best_idx]['text'], best_score
 
@@ -83,13 +76,17 @@ def main():
     st.write("أدخل دعاءً في الحقل أدناه للعثور على أقرب دعاء مشابه من مجموعة الأدعية")
 
     # Load model and data
-    vectorizer, adhkar_df = load_model_and_data()
+    try:
+        vectorizer, adhkar_df = load_model_and_data()
+    except Exception as e:
+        st.error(f"خطأ في تحميل البيانات: {str(e)}")
+        st.stop()
 
     # Input area
     user_input = st.text_area("أدخل نص الدعاء هنا:", height=150, key="dua_input")
     
     if st.button("ابحث عن الدعاء المشابه"):
-        if user_input.strip() == "":
+        if not user_input.strip():
             st.warning("❗ الرجاء إدخال نص الدعاء أولاً")
         else:
             with st.spinner("جاري البحث في قاعدة الأدعية..."):
