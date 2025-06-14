@@ -34,22 +34,53 @@ except ImportError:
 import warnings
 warnings.filterwarnings('ignore')
 
-# Simple modern CSS with your color scheme
+# Enhanced CSS with advanced styling and animations
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
     
-    /* Your Color Scheme */
+    /* Enhanced Color Scheme */
     :root {{
         --bg-color: #333446;
         --text-color: #7F8CAA;
         --accent-color: #B8CFCE;
         --white: #ffffff;
         --light-bg: #f5f7fa;
+        --gradient-primary: linear-gradient(135deg, #B8CFCE 0%, #7F8CAA 100%);
+        --gradient-secondary: linear-gradient(135deg, #f8fafb 0%, #e3f2fd 100%);
+        --gradient-accent: linear-gradient(135deg, #B8CFCE 0%, #c8dedd 50%, #B8CFCE 100%);
+        --shadow-soft: 0 4px 20px rgba(51, 52, 70, 0.08);
+        --shadow-medium: 0 8px 30px rgba(51, 52, 70, 0.12);
+        --shadow-strong: 0 12px 40px rgba(51, 52, 70, 0.15);
+    }}
+    
+    /* Global Styles */
+    * {{
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }}
     
     .stApp {{
+        background: linear-gradient(135deg, #f5f7fa 0%, #e8f4f8 100%);
+        min-height: 100vh;
+    }}
+    
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {{
+        width: 8px;
+    }}
+    
+    ::-webkit-scrollbar-track {{
         background: var(--light-bg);
+        border-radius: 10px;
+    }}
+    
+    ::-webkit-scrollbar-thumb {{
+        background: var(--accent-color);
+        border-radius: 10px;
+    }}
+    
+    ::-webkit-scrollbar-thumb:hover {{
+        background: var(--text-color);
     }}
     
     /* Header Section */
@@ -160,33 +191,197 @@ st.markdown(f"""
         font-family: 'Inter', sans-serif;
     }}
     
-    /* Stats */
+    /* Enhanced Stats */
     .stats-grid {{
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1.5rem;
         margin-bottom: 2rem;
     }}
     
     .stat-card {{
-        background: var(--white);
-        padding: 1rem;
-        border-radius: 12px;
+        background: linear-gradient(135deg, var(--white) 0%, #fafbfc 100%);
+        padding: 1.5rem;
+        border-radius: 16px;
         text-align: center;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        box-shadow: var(--shadow-soft);
+        border: 1px solid var(--accent-color);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }}
+    
+    .stat-card::before {{
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-primary);
+    }}
+    
+    .stat-card:hover {{
+        transform: translateY(-5px) scale(1.03);
+        box-shadow: var(--shadow-medium);
     }}
     
     .stat-number {{
-        font-size: 1.5rem;
+        font-size: 2rem;
         font-weight: 700;
         color: var(--bg-color);
         font-family: 'Inter', sans-serif;
+        margin: 0.5rem 0;
+        animation: statCount 1s ease-out;
+    }}
+    
+    @keyframes statCount {{
+        0% {{ opacity: 0; transform: translateY(20px); }}
+        100% {{ opacity: 1; transform: translateY(0); }}
     }}
     
     .stat-label {{
-        font-size: 0.9rem;
+        font-size: 1rem;
         color: var(--text-color);
         font-family: 'Inter', sans-serif;
+        font-weight: 500;
+    }}
+    
+    /* Enhanced Input styling */
+    .stTextInput > div > div > input {{
+        border-radius: 15px !important;
+        border: 2px solid var(--accent-color) !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 1.2rem !important;
+        padding: 1.2rem 1.5rem !important;
+        background: var(--white) !important;
+        color: var(--bg-color) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: var(--shadow-soft) !important;
+    }}
+    
+    .stTextInput > div > div > input:focus {{
+        border-color: var(--text-color) !important;
+        box-shadow: 0 0 0 4px rgba(184, 207, 206, 0.2), var(--shadow-medium) !important;
+        transform: translateY(-2px) !important;
+    }}
+    
+    .stSelectbox > div > div > select {{
+        border-radius: 15px !important;
+        border: 2px solid var(--accent-color) !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 1.1rem !important;
+        padding: 1rem 1.2rem !important;
+        background: var(--white) !important;
+        color: var(--bg-color) !important;
+        box-shadow: var(--shadow-soft) !important;
+        transition: all 0.3s ease !important;
+    }}
+    
+    .stSelectbox > div > div > select:focus {{
+        border-color: var(--text-color) !important;
+        box-shadow: 0 0 0 4px rgba(184, 207, 206, 0.2), var(--shadow-medium) !important;
+    }}
+    
+    /* Enhanced Tab styling */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 12px;
+        background: rgba(184, 207, 206, 0.1);
+        padding: 8px;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+    }}
+    
+    .stTabs [data-baseweb="tab"] {{
+        background: transparent;
+        color: var(--text-color);
+        border-radius: 12px;
+        font-weight: 500;
+        padding: 12px 20px;
+        transition: all 0.3s ease;
+        font-family: 'Inter', sans-serif;
+    }}
+    
+    .stTabs [aria-selected="true"] {{
+        background: var(--gradient-primary);
+        color: var(--white);
+        box-shadow: var(--shadow-soft);
+        transform: translateY(-2px);
+    }}
+    
+    /* Enhanced Success/Info messages */
+    .stSuccess {{
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+        color: #065f46;
+        border-radius: 12px;
+        border: 1px solid #6ee7b7;
+        animation: messageSlide 0.5s ease-out;
+    }}
+    
+    .stInfo {{
+        background: var(--gradient-primary);
+        color: var(--white);
+        border-radius: 12px;
+        border: 1px solid var(--accent-color);
+        animation: messageSlide 0.5s ease-out;
+    }}
+    
+    @keyframes messageSlide {{
+        0% {{ opacity: 0; transform: translateX(100px); }}
+        100% {{ opacity: 1; transform: translateX(0); }}
+    }}
+    
+    /* Loading Animation */
+    @keyframes loading {{
+        0% {{ transform: rotate(0deg); }}
+        100% {{ transform: rotate(360deg); }}
+    }}
+    
+    .spinner {{
+        border: 3px solid var(--accent-color);
+        border-top: 3px solid var(--text-color);
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: loading 1s linear infinite;
+        margin: 20px auto;
+    }}
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {{
+        .main-header {{
+            padding: 1.5rem;
+        }}
+        
+        .main-header h1 {{
+            font-size: 2rem;
+        }}
+        
+        .search-section {{
+            padding: 1.5rem;
+        }}
+        
+        .adhkar-card {{
+            padding: 1.5rem;
+        }}
+        
+        .adhkar-text {{
+            font-size: 1.2rem;
+            line-height: 1.8;
+        }}
+        
+        .stats-grid {{
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+        }}
+    }}
+    
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {{
+        :root {{
+            --white: #1a1a2e;
+            --light-bg: #16213e;
+        }}
     }}
     
     /* Input styling */
@@ -323,33 +518,52 @@ def initialize_session_state():
         st.session_state.last_date = datetime.now().date()
 
 def display_adhkar_card(adhkar_text, category, index, similarity_score=None):
-    """Display a single adhkar card with enhanced design"""
+    """Display a single adhkar card with enhanced design and interactions"""
     similarity_badge = ""
     if similarity_score is not None:
         similarity_percentage = int(similarity_score * 100)
         similarity_badge = f" • تطابق {similarity_percentage}%"
     
+    # Create unique card ID for animations
+    card_id = f"card_{index}"
+    
     with st.container():
         st.markdown(f"""
-        <div class="adhkar-card">
+        <div class="adhkar-card" id="{card_id}">
             <div class="adhkar-text">{adhkar_text}</div>
             <div style="margin-bottom: 1rem;">
-                <span class="adhkar-category">{category}{similarity_badge}</span>
+                <span class="adhkar-category tooltip">
+                    {category}{similarity_badge}
+                    <span class="tooltiptext">فئة: {category}</span>
+                </span>
             </div>
             <div class="card-actions">
         """, unsafe_allow_html=True)
         
+        # Enhanced buttons with better spacing
         col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+        
         with col1:
             if st.button("📖 قراءة", key=f"read_{index}", help="احتساب قراءة هذا الذكر"):
                 st.session_state.counter += 1
                 st.session_state.daily_adhkar_count += 1
-                st.success("✅ تم احتساب القراءة")
+                # Enhanced success message
+                st.markdown("""
+                <div class="notification notification-success show">
+                    ✅ تم احتساب القراءة بنجاح
+                </div>
+                """, unsafe_allow_html=True)
+                st.balloons()
         
         with col2:
             if st.button("❤️ مفضلة", key=f"fav_{index}", help="إضافة إلى المفضلة"):
                 if adhkar_text not in st.session_state.favorite_adhkar:
                     st.session_state.favorite_adhkar.append(adhkar_text)
+                    st.markdown("""
+                    <div class="notification notification-success show">
+                        ✅ تم إضافة الذكر للمفضلة
+                    </div>
+                    """, unsafe_allow_html=True)
                     st.success("✅ تم إضافة الذكر للمفضلة")
                 else:
                     st.info("هذا الذكر موجود بالفعل في المفضلة")
@@ -357,10 +571,34 @@ def display_adhkar_card(adhkar_text, category, index, similarity_score=None):
         with col3:
             if st.button("📋 نسخ", key=f"copy_{index}", help="نسخ النص"):
                 st.code(adhkar_text, language="text")
+                st.markdown("""
+                <div class="notification notification-info show">
+                    📋 تم تحضير النص للنسخ
+                </div>
+                """, unsafe_allow_html=True)
         
         with col4:
             if st.button("🔗 مشاركة", key=f"share_{index}", help="مشاركة الذكر"):
-                st.info("تم تحضير الذكر للمشاركة")
+                share_text = f"🕌 {adhkar_text}\n\n📂 الفئة: {category}\n\n🌟 من تطبيق أذكار المسلم"
+                st.text_area("النص للمشاركة:", value=share_text, height=100, key=f"share_text_{index}")
+                st.markdown("""
+                <div class="notification notification-info show">
+                    🔗 تم تحضير الذكر للمشاركة
+                </div>
+                """, unsafe_allow_html=True)
+        
+        # Progress bar for reading progress (if applicable)
+        if st.session_state.daily_adhkar_count > 0:
+            daily_goal = 10  # Example daily goal
+            progress = min(st.session_state.daily_adhkar_count / daily_goal * 100, 100)
+            st.markdown(f"""
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {progress}%"></div>
+            </div>
+            <small style="color: var(--text-color); font-family: 'Inter', sans-serif;">
+                التقدم اليومي: {st.session_state.daily_adhkar_count}/{daily_goal} أذكار
+            </small>
+            """, unsafe_allow_html=True)
         
         st.markdown("</div></div>", unsafe_allow_html=True)
 
@@ -377,25 +615,26 @@ def main():
             st.error("لا يمكن تحميل البيانات. يرجى التأكد من وجود ملف البيانات.")
             return
     
-    # Main header with logo
+    # Enhanced main header with floating elements
     st.markdown("""
+    <div class="floating-elements"></div>
     <div class="main-header">
         <div class="logo-container">
-            <img src="https://via.placeholder.com/80x80/B8CFCE/333446?text=🕌" class="logo-img" alt="Islamic Logo">
+            <img src="https://via.placeholder.com/90x90/B8CFCE/333446?text=🕌" class="logo-img interactive-icon" alt="Islamic Logo">
         </div>
-        <h1>أذكار المسلم</h1>
+        <h1 class="enhanced-text">أذكار المسلم</h1>
         <p>اذكروا الله كثيراً لعلكم تفلحون</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Search section at the top
+    # Enhanced search section
     st.markdown("""
     <div class="search-section">
         <div class="search-title">🔍 البحث في الأذكار والأدعية</div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Search functionality with bigger input
+    # Enhanced search functionality with progress indicator
     col1, col2 = st.columns([4, 1])
     
     with col1:
@@ -403,12 +642,18 @@ def main():
             "", 
             placeholder="ابحث في الأذكار والأدعية... (مثال: الحمد لله، اللهم اغفر لي، الاستغفار)", 
             label_visibility="collapsed",
-            key="main_search"
+            key="main_search",
+            help="استخدم الكلمات المفتاحية للبحث في مجموعة الأذكار"
         )
     
     with col2:
         categories = ['الكل'] + list(df['category'].unique())
-        selected_category = st.selectbox("الفئة", categories, label_visibility="collapsed")
+        selected_category = st.selectbox(
+            "الفئة", 
+            categories, 
+            label_visibility="collapsed",
+            help="اختر فئة معينة لتضييق نطاق البحث"
+        )
     
     # Sidebar
     with st.sidebar:
