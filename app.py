@@ -601,33 +601,41 @@ def main():
     # Initialize session state
     initialize_session_state()
     
-    # Load your AI model and data
-    vectorizer, model_df = load_model_and_vectorizer()
+    # Try to load your AI model and data
+    try:
+        vectorizer, model_df = load_model_and_vectorizer()
+        ai_enabled = vectorizer is not None and not model_df.empty
+    except Exception as e:
+        vectorizer, model_df = None, pd.DataFrame()
+        ai_enabled = False
     
     # Load sample data as fallback
     adhkar_data = load_adhkar_data()
     
     # Use model data if available, otherwise use sample data
-    if not model_df.empty:
+    if ai_enabled:
         st.success("🤖 تم تحميل النموذج الذكي بنجاح!")
         # Convert model data to format compatible with display
-        converted_data = []
-        for idx, row in model_df.iterrows():
-            converted_data.append({
-                "id": idx + 1,
-                "arabic": row.get('text', row.get('clean_text', '')),
-                "transliteration": f"Dhikr {idx + 1}",
-                "translation": f"Islamic remembrance from {row.get('category', 'general')} category",
-                "category": row.get('category', 'general'),
-                "source": "Islamic Sources",
-                "reward": "Great reward from Allah",
-                "count": 1,
-            })
-        adhkar_data = converted_data
-        ai_enabled = True
+        try:
+            converted_data = []
+            for idx, row in model_df.iterrows():
+                converted_data.append({
+                    "id": idx + 1,
+                    "arabic": row.get('text', row.get('clean_text', '')),
+                    "transliteration": f"Dhikr {idx + 1}",
+                    "translation": f"Islamic remembrance from {row.get('category', 'general')} category",
+                    "category": row.get('category', 'general'),
+                    "source": "Islamic Sources",
+                    "reward": "Great reward from Allah",
+                    "count": 1,
+                })
+            if converted_data:
+                adhkar_data = converted_data
+        except Exception as e:
+            st.warning(f"خطأ في تحويل بيانات النموذج: {e}")
+            ai_enabled = False
     else:
-        st.warning("⚠️ لم يتم العثور على النموذج الذكي، سيتم استخدام البيانات التجريبية")
-        ai_enabled = False
+        st.info("📚 يتم استخدام البيانات التجريبية (لتفعيل الذكاء الاصطناعي، أضف ملفات tfidf_vectorizer.pkl و adhkar_df.csv)")
     
     # Modern Header
     st.markdown("""
@@ -680,7 +688,7 @@ def main():
         if search_query.strip():
             query_lower = search_query.lower().strip()
             
-            if ai_enabled and vectorizer is not None:
+                if ai_enabled and vectorizer is not None and not model_df.empty:
                 # Use AI semantic search
                 st.info("🤖 جاري البحث الذكي...")
                 
