@@ -15,7 +15,13 @@ import random
 import pickle
 from collections import Counter
 import re
-import joblib
+
+# Try to import optional dependencies
+try:
+    import joblib
+    JOBLIB_AVAILABLE = True
+except ImportError:
+    JOBLIB_AVAILABLE = False
 
 # Try to import scikit-learn, fallback gracefully if not available
 try:
@@ -286,11 +292,18 @@ def load_data():
         return pd.DataFrame()
 
 def load_model_and_vectorizer():
-    """Load model and data using joblib"""
+    """Load model and data using joblib if available"""
     try:
-        vectorizer = joblib.load("tfidf_vectorizer.pkl")
-        df = pd.read_csv("adhkar_df.csv")
-        return vectorizer, df
+        if JOBLIB_AVAILABLE:
+            vectorizer = joblib.load("tfidf_vectorizer.pkl")
+            df = pd.read_csv("adhkar_df.csv")
+            return vectorizer, df
+        else:
+            # Fallback to pickle if joblib not available
+            with open("tfidf_vectorizer.pkl", 'rb') as f:
+                vectorizer = pickle.load(f)
+            df = pd.read_csv("adhkar_df.csv")
+            return vectorizer, df
     except Exception as e:
         st.error(f"خطأ في تحميل النموذج: {e}")
         return None, pd.DataFrame()
@@ -476,9 +489,12 @@ pip install streamlit pandas numpy scikit-learn joblib
     """)
 
 def main():
-    # Show sklearn warning after page config if needed
+    # Show warnings after page config if needed
     if not SKLEARN_AVAILABLE:
         st.warning("⚠️ scikit-learn not installed. AI features will be disabled. Install with: pip install scikit-learn")
+    
+    if not JOBLIB_AVAILABLE:
+        st.info("ℹ️ joblib not installed. Using pickle as fallback for model loading. Install with: pip install joblib")
     
     # Initialize session state
     initialize_session_state()
@@ -523,6 +539,10 @@ def main():
             st.success("✅ النموذج جاهز للاستخدام")
             vocab_size = len(vectorizer.get_feature_names_out())
             st.info(f"📊 حجم المفردات: {vocab_size:,} كلمة")
+            if JOBLIB_AVAILABLE:
+                st.info("🔧 تم التحميل باستخدام joblib")
+            else:
+                st.info("🔧 تم التحميل باستخدام pickle")
         elif SKLEARN_AVAILABLE:
             st.warning("⚠️ النموذج غير محمل")
         else:
