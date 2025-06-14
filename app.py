@@ -323,29 +323,31 @@ def initialize_session_state():
         st.session_state.last_date = datetime.now().date()
 
 def display_adhkar_card(adhkar_text, category, index, similarity_score=None):
-    """Display a single adhkar card"""
+    """Display a single adhkar card with enhanced design"""
     similarity_badge = ""
     if similarity_score is not None:
         similarity_percentage = int(similarity_score * 100)
-        similarity_badge = f" ({similarity_percentage}%)"
+        similarity_badge = f" • تطابق {similarity_percentage}%"
     
     with st.container():
         st.markdown(f"""
         <div class="adhkar-card">
             <div class="adhkar-text">{adhkar_text}</div>
-            <span class="adhkar-category">{category}{similarity_badge}</span>
-        </div>
+            <div style="margin-bottom: 1rem;">
+                <span class="adhkar-category">{category}{similarity_badge}</span>
+            </div>
+            <div class="card-actions">
         """, unsafe_allow_html=True)
         
         col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
         with col1:
-            if st.button("📖 قراءة", key=f"read_{index}"):
+            if st.button("📖 قراءة", key=f"read_{index}", help="احتساب قراءة هذا الذكر"):
                 st.session_state.counter += 1
                 st.session_state.daily_adhkar_count += 1
                 st.success("✅ تم احتساب القراءة")
         
         with col2:
-            if st.button("❤️ مفضلة", key=f"fav_{index}"):
+            if st.button("❤️ مفضلة", key=f"fav_{index}", help="إضافة إلى المفضلة"):
                 if adhkar_text not in st.session_state.favorite_adhkar:
                     st.session_state.favorite_adhkar.append(adhkar_text)
                     st.success("✅ تم إضافة الذكر للمفضلة")
@@ -353,12 +355,14 @@ def display_adhkar_card(adhkar_text, category, index, similarity_score=None):
                     st.info("هذا الذكر موجود بالفعل في المفضلة")
         
         with col3:
-            if st.button("📋 نسخ", key=f"copy_{index}"):
+            if st.button("📋 نسخ", key=f"copy_{index}", help="نسخ النص"):
                 st.code(adhkar_text, language="text")
         
         with col4:
-            if st.button("🔗 مشاركة", key=f"share_{index}"):
-                st.info("تم نسخ الذكر للمشاركة")
+            if st.button("🔗 مشاركة", key=f"share_{index}", help="مشاركة الذكر"):
+                st.info("تم تحضير الذكر للمشاركة")
+        
+        st.markdown("</div></div>", unsafe_allow_html=True)
 
 def main():
     # Initialize session state
@@ -373,10 +377,13 @@ def main():
             st.error("لا يمكن تحميل البيانات. يرجى التأكد من وجود ملف البيانات.")
             return
     
-    # Main header
+    # Main header with logo
     st.markdown("""
     <div class="main-header">
-        <h1>🕌 أذكار المسلم</h1>
+        <div class="logo-container">
+            <img src="https://via.placeholder.com/80x80/B8CFCE/333446?text=🕌" class="logo-img" alt="Islamic Logo">
+        </div>
+        <h1>أذكار المسلم</h1>
         <p>اذكروا الله كثيراً لعلكم تفلحون</p>
     </div>
     """, unsafe_allow_html=True)
@@ -384,15 +391,20 @@ def main():
     # Search section at the top
     st.markdown("""
     <div class="search-section">
-        <div class="search-title">🔍 البحث في الأذكار</div>
+        <div class="search-title">🔍 البحث في الأذكار والأدعية</div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Search functionality
-    col1, col2 = st.columns([3, 1])
+    # Search functionality with bigger input
+    col1, col2 = st.columns([4, 1])
     
     with col1:
-        search_query = st.text_input("", placeholder="ابحث في الأذكار والأدعية...", label_visibility="collapsed")
+        search_query = st.text_input(
+            "", 
+            placeholder="ابحث في الأذكار والأدعية... (مثال: الحمد لله، اللهم اغفر لي، الاستغفار)", 
+            label_visibility="collapsed",
+            key="main_search"
+        )
     
     with col2:
         categories = ['الكل'] + list(df['category'].unique())
