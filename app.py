@@ -716,7 +716,7 @@ def main():
     # Time-based greeting
     greeting, time_period = get_time_based_greeting()
     st.markdown(f"""
-    <div class="reward-box" style="text-align: center; margin-top: 1rem;">
+    <div class="reward-box" style="text-align: center; margin-top: 3rem;">
         <h3>{greeting}</h3>
     </div>
     """, unsafe_allow_html=True)
