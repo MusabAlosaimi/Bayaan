@@ -179,7 +179,7 @@ st.markdown("""
     .modern-card:hover {
         transform: translateY(-4px);
         box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
-        border-color: var(--emerald-200);
+        border-color: var(--emerald-100);
     }
     
     .featured-card {
