@@ -390,15 +390,24 @@ st.markdown("""
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
-        padding: 8px 16px !important;
+        padding: 12px 20px !important;
         font-weight: 500 !important;
         transition: all 0.3s ease !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.95rem !important;
+        width: 100% !important;
     }
     
     .stButton > button:hover {
         background: var(--emerald-700) !important;
         transform: translateY(-1px) !important;
         box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3) !important;
+    }
+    
+    /* Active tab styling */
+    .stButton > button:focus {
+        background: var(--emerald-700) !important;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
     }
     
     .stTextInput > div > div > input {
@@ -605,36 +614,33 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # Modern Tab Navigation
-    st.markdown("""
-    <div class="modern-tabs">
-        <button class="tab-button active" onclick="setActiveTab('search')">
-            🔍 البحث
-        </button>
-        <button class="tab-button" onclick="setActiveTab('favorites')">
-            ❤️ المفضلة
-        </button>
-        <button class="tab-button" onclick="setActiveTab('daily')">
-            ⭐ اليومي
-        </button>
-        <button class="tab-button" onclick="setActiveTab('stats')">
-            📊 الإحصائيات
-        </button>
-    </div>
-    """, unsafe_allow_html=True)
+    # Tab selection buttons
+    col1, col2, col3, col4 = st.columns(4)
     
-    # Tab selection using Streamlit tabs (hidden UI)
-    tabs = st.tabs(["البحث", "المفضلة", "اليومي", "الإحصائيات"])
+    with col1:
+        if st.button("🔍 البحث", key="tab_search", use_container_width=True):
+            st.session_state.active_tab = 'search'
     
-    # Search Tab
-    with tabs[0]:
-        # Modern Search Bar
-        st.markdown("""
-        <div class="search-container">
-            <div class="search-icon">🔍</div>
-        </div>
-        """, unsafe_allow_html=True)
+    with col2:
+        if st.button("❤️ المفضلة", key="tab_favorites", use_container_width=True):
+            st.session_state.active_tab = 'favorites'
+    
+    with col3:
+        if st.button("⭐ اليومي", key="tab_daily", use_container_width=True):
+            st.session_state.active_tab = 'daily'
+    
+    with col4:
+        if st.button("📊 الإحصائيات", key="tab_stats", use_container_width=True):
+            st.session_state.active_tab = 'stats'
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Display content based on active tab
+    if st.session_state.active_tab == 'search':
+        # Search Tab Content
+        st.markdown("### 🔍 البحث في الأذكار")
         
+        # Modern Search Bar
         search_query = st.text_input(
             "",
             placeholder="ابحث في الأذكار... (عربي أو إنجليزي)",
@@ -643,26 +649,46 @@ def main():
         )
         
         # Filter adhkar based on search
-        if search_query:
+        if search_query.strip():
             filtered_adhkar = []
+            query_lower = search_query.lower().strip()
+            
             for adhkar in adhkar_data:
-                searchable_text = f"{adhkar['arabic']} {adhkar['transliteration']} {adhkar['translation']} {adhkar['category']}"
-                similarity = calculate_similarity(search_query, searchable_text)
-                if similarity > 0:
+                # Create searchable text including all fields
+                searchable_text = f"{adhkar['arabic']} {adhkar['transliteration']} {adhkar['translation']} {adhkar['category']} {adhkar['source']}".lower()
+                
+                # Simple search - check if query words are in the text
+                query_words = query_lower.split()
+                matches = 0
+                for word in query_words:
+                    if word in searchable_text:
+                        matches += 1
+                
+                # Calculate similarity score
+                if matches > 0:
+                    similarity = matches / len(query_words)
                     filtered_adhkar.append((adhkar, similarity))
             
-            # Sort by similarity
+            # Sort by similarity (best matches first)
             filtered_adhkar.sort(key=lambda x: x[1], reverse=True)
             adhkar_to_display = [adhkar for adhkar, _ in filtered_adhkar]
+            
+            if adhkar_to_display:
+                st.success(f"🎯 تم العثور على {len(adhkar_to_display)} نتيجة")
+            else:
+                st.info("❌ لم يتم العثور على نتائج مطابقة. جرب كلمات أخرى.")
         else:
             adhkar_to_display = adhkar_data
+            st.info("💡 اكتب في مربع البحث للعثور على أذكار معينة")
         
         # Display adhkar cards
         for adhkar in adhkar_to_display:
             display_adhkar_card(adhkar)
     
-    # Favorites Tab
-    with tabs[1]:
+    elif st.session_state.active_tab == 'favorites':
+        # Favorites Tab Content
+        st.markdown("### ❤️ الأذكار المفضلة")
+        
         favorite_adhkar = [adhkar for adhkar in adhkar_data if adhkar['id'] in st.session_state.favorites]
         
         if not favorite_adhkar:
@@ -670,32 +696,34 @@ def main():
             <div class="empty-state">
                 <div class="empty-icon">❤️</div>
                 <h3>لا توجد أذكار مفضلة</h3>
-                <p>أضف أذكارك المفضلة لتظهر هنا</p>
+                <p>أضف أذكارك المفضلة من قسم البحث لتظهر هنا</p>
             </div>
             """, unsafe_allow_html=True)
         else:
+            st.success(f"لديك {len(favorite_adhkar)} ذكر في المفضلة")
             for adhkar in favorite_adhkar:
                 display_adhkar_card(adhkar)
     
-    # Daily Tab
-    with tabs[2]:
-        st.markdown("""
-        <div style="text-align: center; margin-bottom: 2rem;">
-            <h2 style="color: var(--emerald-700); font-size: 2rem; margin-bottom: 1rem;">ذكر اليوم</h2>
-        </div>
-        """, unsafe_allow_html=True)
+    elif st.session_state.active_tab == 'daily':
+        # Daily Tab Content
+        st.markdown("### ⭐ ذكر اليوم")
         
         col1, col2, col3 = st.columns([1, 1, 1])
         with col2:
-            if st.button("🎲 ذكر عشوائي", key="random_adhkar"):
+            if st.button("🎲 احصل على ذكر عشوائي", key="random_adhkar", use_container_width=True):
                 st.session_state.daily_adhkar = random.choice(adhkar_data)
+                st.success("✨ تم اختيار ذكر جديد!")
                 st.rerun()
+        
+        st.markdown("<br>", unsafe_allow_html=True)
         
         if st.session_state.daily_adhkar:
             display_adhkar_card(st.session_state.daily_adhkar, featured=True)
     
-    # Statistics Tab
-    with tabs[3]:
+    elif st.session_state.active_tab == 'stats':
+        # Statistics Tab Content
+        st.markdown("### 📊 الإحصائيات والتحليلات")
+        
         total_reads = sum(st.session_state.read_counts.values())
         favorite_count = len(st.session_state.favorites)
         total_adhkar = len(adhkar_data)
@@ -720,7 +748,7 @@ def main():
         
         # Most Read Adhkar
         if st.session_state.read_counts:
-            st.markdown("### الأذكار الأكثر قراءة")
+            st.markdown("#### 📈 الأذكار الأكثر قراءة")
             
             # Sort by read count
             sorted_reads = sorted(st.session_state.read_counts.items(), key=lambda x: x[1], reverse=True)
@@ -743,6 +771,8 @@ def main():
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
+        else:
+            st.info("📖 ابدأ بقراءة بعض الأذكار لترى الإحصائيات هنا")
 
 if __name__ == "__main__":
     main()
