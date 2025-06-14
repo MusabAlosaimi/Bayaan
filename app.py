@@ -688,7 +688,7 @@ def main():
         if search_query.strip():
             query_lower = search_query.lower().strip()
             
-                if ai_enabled and vectorizer is not None and not model_df.empty:
+            if ai_enabled and vectorizer is not None and not model_df.empty:
                 # Use AI semantic search
                 st.info("🤖 جاري البحث الذكي...")
                 
