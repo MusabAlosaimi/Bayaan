@@ -34,237 +34,245 @@ except ImportError:
 import warnings
 warnings.filterwarnings('ignore')
 
-# Modern iOS-style CSS
+# Modern simple CSS
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=SF+Pro+Display:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
     
     /* Global Styles */
     .stApp {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     }
     
     .main-header {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        padding: 2rem;
-        border-radius: 20px;
+        background: white;
+        padding: 3rem 2rem;
+        border-radius: 24px;
         margin-bottom: 2rem;
         text-align: center;
-        color: #1d1d1f;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #1a202c;
+        box-shadow: 0 4px 32px rgba(0, 0, 0, 0.06);
+        border: 1px solid rgba(0, 0, 0, 0.05);
     }
     
-    .ai-badge {
-        background: linear-gradient(135deg, #007AFF, #5856D6);
-        color: white;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: 600;
-        display: inline-block;
-        margin-left: 12px;
-        font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    .logo-container {
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .main-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0.5rem 0;
+        color: #2d3748;
+        font-family: 'Amiri', serif;
+    }
+    
+    .main-header h2 {
+        font-size: 1.5rem;
+        font-weight: 400;
+        margin: 0.5rem 0;
+        color: #718096;
+        font-family: 'Inter', sans-serif;
     }
     
     .adhkar-card {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        padding: 24px;
+        background: white;
+        padding: 2rem;
         border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        margin-bottom: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+        margin-bottom: 1rem;
+        border: 1px solid rgba(0, 0, 0, 0.05);
         direction: rtl;
         text-align: right;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
     }
     
     .adhkar-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
     }
     
     .similar-adhkar-card {
-        background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 59, 48, 0.1));
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        padding: 24px;
+        background: linear-gradient(135deg, #fef7e0, #feebc8);
+        padding: 2rem;
         border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(255, 149, 0, 0.2);
-        margin-bottom: 16px;
-        border: 1px solid rgba(255, 149, 0, 0.3);
+        box-shadow: 0 2px 16px rgba(237, 137, 54, 0.1);
+        margin-bottom: 1rem;
+        border: 1px solid #fed7aa;
         direction: rtl;
         text-align: right;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
     }
     
     .similar-adhkar-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 32px rgba(255, 149, 0, 0.3);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 24px rgba(237, 137, 54, 0.15);
     }
     
     .adhkar-text {
-        font-size: 18px;
+        font-size: 1.25rem;
         line-height: 1.8;
-        color: #1d1d1f;
+        color: #2d3748;
         font-family: 'Amiri', serif;
-        margin-bottom: 16px;
+        margin-bottom: 1rem;
         font-weight: 400;
     }
     
     .similarity-score {
-        background: linear-gradient(135deg, #34C759, #30D158);
+        background: #10b981;
         color: white;
         padding: 4px 12px;
         border-radius: 12px;
-        font-size: 12px;
+        font-size: 0.75rem;
         font-weight: 600;
         display: inline-block;
         margin-left: 8px;
-        font-family: 'SF Pro Display', sans-serif;
+        font-family: 'Inter', sans-serif;
     }
     
     .category-tag {
-        background: linear-gradient(135deg, #007AFF, #5856D6);
+        background: #4f46e5;
         color: white;
         padding: 8px 16px;
-        border-radius: 16px;
-        font-size: 14px;
+        border-radius: 12px;
+        font-size: 0.875rem;
         font-weight: 500;
         display: inline-block;
-        margin-top: 12px;
-        font-family: 'SF Pro Display', sans-serif;
+        margin-top: 1rem;
+        font-family: 'Inter', sans-serif;
     }
     
     .search-container {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        padding: 24px;
+        background: white;
+        padding: 2rem;
         border-radius: 16px;
-        margin-bottom: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 2rem;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
     }
     
     .ai-search-container {
-        background: linear-gradient(135deg, rgba(0, 122, 255, 0.1), rgba(88, 86, 214, 0.1));
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        color: #1d1d1f;
-        padding: 24px;
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        color: #1e40af;
+        padding: 2rem;
         border-radius: 16px;
-        margin-bottom: 24px;
-        border: 1px solid rgba(0, 122, 255, 0.2);
-        box-shadow: 0 4px 20px rgba(0, 122, 255, 0.1);
+        margin-bottom: 2rem;
+        border: 1px solid #bfdbfe;
+        box-shadow: 0 2px 16px rgba(59, 130, 246, 0.1);
     }
     
     .sidebar-content {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        padding: 20px;
+        background: white;
+        padding: 1.5rem;
         border-radius: 16px;
-        margin-bottom: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin-bottom: 1rem;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
     }
     
     .time-based-greeting {
-        background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 204, 0, 0.1));
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        padding: 20px;
+        background: linear-gradient(135deg, #fff7ed, #fed7aa);
+        padding: 1.5rem;
         border-radius: 16px;
         text-align: center;
-        margin-bottom: 20px;
-        color: #1d1d1f;
-        border: 1px solid rgba(255, 149, 0, 0.2);
-        box-shadow: 0 4px 20px rgba(255, 149, 0, 0.1);
+        margin-bottom: 1.5rem;
+        color: #9a3412;
+        border: 1px solid #fdba74;
+        box-shadow: 0 2px 16px rgba(251, 146, 60, 0.1);
     }
     
     .counter-display {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        padding: 24px;
+        background: white;
+        padding: 2rem;
         border-radius: 16px;
         text-align: center;
-        margin: 16px 0;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        margin: 1rem 0;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
     }
     
     .counter-number {
-        font-size: 48px;
+        font-size: 3rem;
         font-weight: 700;
-        color: #007AFF;
-        margin: 16px 0;
-        font-family: 'SF Pro Display', sans-serif;
+        color: #4f46e5;
+        margin: 1rem 0;
+        font-family: 'Inter', sans-serif;
     }
     
     .random-adhkar {
-        background: linear-gradient(135deg, rgba(175, 82, 222, 0.1), rgba(255, 45, 85, 0.1));
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        padding: 24px;
+        background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+        padding: 2rem;
         border-radius: 16px;
-        margin: 16px 0;
+        margin: 1rem 0;
         text-align: center;
-        color: #1d1d1f;
-        border: 1px solid rgba(175, 82, 222, 0.2);
-        box-shadow: 0 4px 20px rgba(175, 82, 222, 0.1);
+        color: #7c3aed;
+        border: 1px solid #c4b5fd;
+        box-shadow: 0 2px 16px rgba(139, 92, 246, 0.1);
     }
     
     .stat-box {
-        background: linear-gradient(135deg, #FF2D92, #FF6B35);
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
         color: white;
-        padding: 24px;
+        padding: 2rem;
         border-radius: 16px;
         text-align: center;
-        box-shadow: 0 8px 32px rgba(255, 45, 146, 0.3);
+        box-shadow: 0 4px 24px rgba(79, 70, 229, 0.25);
         min-width: 150px;
-        font-family: 'SF Pro Display', sans-serif;
+        font-family: 'Inter', sans-serif;
     }
     
     .installation-guide {
-        background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(255, 59, 48, 0.1));
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        padding: 24px;
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        padding: 2rem;
         border-radius: 16px;
-        margin: 16px 0;
-        border-left: 4px solid #FF9500;
-        border: 1px solid rgba(255, 149, 0, 0.2);
-        box-shadow: 0 4px 20px rgba(255, 149, 0, 0.1);
+        margin: 1rem 0;
+        border-left: 4px solid #f59e0b;
+        border: 1px solid #fbbf24;
+        box-shadow: 0 2px 16px rgba(245, 158, 11, 0.1);
     }
     
     /* Button Styles */
     .stButton > button {
-        background: linear-gradient(135deg, #007AFF, #5856D6);
+        background: #4f46e5;
         color: white;
         border: none;
         border-radius: 12px;
         padding: 12px 24px;
-        font-weight: 600;
-        font-family: 'SF Pro Display', sans-serif;
+        font-weight: 500;
+        font-family: 'Inter', sans-serif;
         font-size: 14px;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 20px rgba(0, 122, 255, 0.3);
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
     }
     
     .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 32px rgba(0, 122, 255, 0.4);
+        background: #4338ca;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
+    }
+    
+    /* Typography */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        color: #2d3748;
+    }
+    
+    p, div, span {
+        font-family: 'Inter', sans-serif;
+        color: #4a5568;
+    }
+    
+    /* Remove backdrop-filter for better compatibility */
+    .main-header, .search-container, .sidebar-content, .counter-display {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 </style>
 
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)
 
 # Clean Arabic text by removing diacritics
@@ -516,13 +524,27 @@ def main():
             return
     
     # Main header
-    ai_status = "🤖 مفعل" if (SKLEARN_AVAILABLE and vectorizer is not None) else "❌ غير متاح"
     st.markdown(f"""
     <div class="main-header">
-        <h1>🕌 أذكار المسلم الذكي</h1>
-        <h2>Islamic Adhkar AI</h2>
-        <p style="font-size: 18px; margin-top: 16px;">اذكروا الله كثيراً لعلكم تفلحون</p>
-        <span class="ai-badge">الذكاء الاصطناعي: {ai_status}</span>
+        <div class="logo-container">
+            <svg width="80" height="100" viewBox="0 0 200 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M100 20 L160 50 Q180 70 180 100 L180 160 Q180 190 160 210 L100 230 L40 210 Q20 190 20 160 L20 100 Q20 70 40 50 L100 20 Z" fill="url(#gradient)" stroke="#C9A96E" stroke-width="3"/>
+                <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#D4AF37;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#B8860B;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <text x="100" y="140" text-anchor="middle" fill="white" font-family="serif" font-size="32" font-weight="bold">بيان</text>
+                <circle cx="100" cy="60" r="8" fill="white" opacity="0.8"/>
+                <circle cx="100" cy="190" r="8" fill="white" opacity="0.8"/>
+                <path d="M70 80 Q100 60 130 80" stroke="white" stroke-width="2" fill="none" opacity="0.6"/>
+                <path d="M70 170 Q100 190 130 170" stroke="white" stroke-width="2" fill="none" opacity="0.6"/>
+            </svg>
+        </div>
+        <h1>بيان - أذكار المسلم</h1>
+        <h2>Bayaan - Islamic Adhkar</h2>
+        <p style="font-size: 16px; margin-top: 12px; opacity: 0.8;">اذكروا الله كثيراً لعلكم تفلحون</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -957,39 +979,36 @@ def main():
             st.markdown("---")
         
         st.markdown(f"""
-        ### 🕌 تطبيق أذكار المسلم الذكي
+        ### 🕌 بيان - أذكار المسلم
         
         هذا التطبيق يحتوي على مجموعة شاملة من الأذكار والأدعية الإسلامية المأخوذة من القرآن الكريم والسنة النبوية الشريفة.
         
-        #### 🌟 المميزات الأساسية:
+        #### 🌟 المميزات:
         - 📖 أكثر من {len(df)} ذكر ودعاء
-        - 🔍 بحث تقليدي في الأذكار
+        - 🔍 بحث ذكي وتقليدي في الأذكار
         - ⭐ إمكانية حفظ الأذكار المفضلة
         - 📊 تتبع عدد الأذكار المقروءة
         - 🎯 اقتراحات حسب الوقت
-        - 📱 تصميم حديث مستوحى من iOS
+        - 📱 تصميم بسيط وحديث
         """)
         
         if SKLEARN_AVAILABLE and vectorizer is not None:
             vocab_size = len(vectorizer.get_feature_names_out())
             st.markdown(f"""
-            #### 🤖 المميزات الذكية (مفعلة):
+            #### 🤖 الميزات الذكية:
             - 🧠 بحث ذكي بالمعنى باستخدام TF-IDF
             - 🎯 البحث عن الدعاء المناسب لحالتك
             - 🔍 العثور على أذكار مشابهة
-            - 📊 تحليلات ذكية للفئات
-            - 🎯 توصيات مخصصة
             - 📈 تحليل النصوص بـ {vocab_size:,} كلمة
-            - 🤲 خوارزمية التشابه المحسنة
             """)
         elif SKLEARN_AVAILABLE:
             st.markdown("""
-            #### ⚠️ المميزات الذكية (غير مفعلة):
+            #### ⚠️ الميزات الذكية:
             - النموذج غير محمل - تأكد من وجود ملف `tfidf_vectorizer.pkl`
             """)
         else:
             st.markdown("""
-            #### ❌ المميزات الذكية (غير متاحة):
+            #### 📦 لتفعيل الميزات الذكية:
             - يتطلب تثبيت scikit-learn و joblib
             - راجع دليل التثبيت أعلاه
             """)
