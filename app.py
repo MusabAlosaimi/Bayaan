@@ -1,10 +1,10 @@
 import streamlit as st
 
-# Page configuration
+# Page configuration MUST be first
 st.set_page_config(
-    page_title="بيان - أذكار المسلم",
+    page_title="أذكار المسلم - Islamic Adhkar AI",
     page_icon="🕌",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="expanded"
 )
 
@@ -13,6 +13,7 @@ import numpy as np
 from datetime import datetime
 import random
 import pickle
+from collections import Counter
 import re
 
 # Try to import optional dependencies
@@ -22,304 +23,315 @@ try:
 except ImportError:
     JOBLIB_AVAILABLE = False
 
-# Try to import scikit-learn
+# Try to import scikit-learn, fallback gracefully if not available
 try:
     from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
 
-# Modern website CSS
+import warnings
+warnings.filterwarnings('ignore')
+
+# Improved CSS - keeping original design but enhanced
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
     
-    /* Modern Color Scheme */
+    /* Your Color Scheme - Enhanced */
     :root {{
-        --primary: #2563eb;
-        --primary-light: #dbeafe;
-        --secondary: #8b5cf6;
-        --accent: #10b981;
-        --light: #f8fafc;
-        --dark: #1e293b;
-        --text: #334155;
-        --border: #e2e8f0;
-        --card-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        --bg-color: #333446;
+        --text-color: #7F8CAA;
+        --accent-color: #B8CFCE;
+        --white: #ffffff;
+        --light-bg: #f5f7fa;
     }}
     
     .stApp {{
-        background: #f8fafc;
-        font-family: 'Inter', sans-serif;
+        background: var(--light-bg);
     }}
     
-    .container {{
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 0 1rem;
-    }}
-    
-    .header {{
-        background: white;
-        padding: 1rem 0;
+    /* Enhanced Header Section */
+    .main-header {{
+        background: var(--white);
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
         text-align: center;
-        box-shadow: var(--card-shadow);
-        position: sticky;
-        top: 0;
-        z-index: 100;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--accent-color);
     }}
     
     .logo-container {{
+        margin-bottom: 1rem;
         display: flex;
         justify-content: center;
-        padding: 0.5rem 0;
     }}
     
     .logo-img {{
-        width: 120px;
-        height: auto;
-        border-radius: 16px;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 3px solid var(--accent-color);
+        padding: 8px;
+        background: var(--white);
+        transition: transform 0.3s ease;
     }}
     
-    .app-title {{
-        font-size: 2rem;
+    .logo-img:hover {{
+        transform: scale(1.05);
+    }}
+    
+    .main-header h1 {{
+        font-size: 2.2rem;
         font-weight: 700;
-        margin: 0.25rem 0;
-        color: var(--dark);
+        margin: 1rem 0 0.5rem 0;
+        color: var(--bg-color);
         font-family: 'Amiri', serif;
     }}
     
-    .app-subtitle {{
+    .main-header p {{
         font-size: 1.1rem;
-        font-weight: 400;
-        margin: 0.25rem 0;
-        color: #64748b;
+        color: var(--text-color);
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
     }}
     
-    .nav-container {{
-        display: flex;
-        justify-content: center;
-        gap: 2rem;
-        margin: 1.5rem 0;
-        padding: 1rem 0;
-        border-bottom: 1px solid var(--border);
-    }}
-    
-    .nav-button {{
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--text);
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }}
-    
-    .nav-button:hover {{
-        background: var(--primary-light);
-        color: var(--primary);
-    }}
-    
-    .nav-button.active {{
-        background: var(--primary);
-        color: white;
-    }}
-    
-    .card {{
-        background: white;
-        padding: 1.5rem;
+    /* Enhanced Search Section */
+    .search-section {{
+        background: linear-gradient(135deg, var(--white), #f8fafb);
+        padding: 2rem;
         border-radius: 16px;
-        margin: 1.5rem 0;
-        border: 1px solid var(--border);
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 2px solid var(--accent-color);
+    }}
+    
+    .search-title {{
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--bg-color);
+        margin-bottom: 1.5rem;
+        font-family: 'Inter', sans-serif;
+        text-align: center;
+    }}
+    
+    /* Enhanced Cards */
+    .adhkar-card {{
+        background: linear-gradient(135deg, var(--white), #fafbfc);
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08);
         direction: rtl;
         text-align: right;
-        box-shadow: var(--card-shadow);
-        transition: all 0.2s ease;
+        border: 1px solid var(--accent-color);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
     }}
     
-    .card:hover {{
-        transform: translateY(-3px);
-        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    .adhkar-card::before {{
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, var(--accent-color), var(--text-color));
     }}
     
-    .highlight-card {{
-        background: linear-gradient(135deg, #eff6ff, #dbeafe);
-        border-left: 4px solid var(--primary);
+    .adhkar-card:hover {{
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        border-color: var(--text-color);
     }}
     
     .adhkar-text {{
-        font-size: 1.25rem;
-        line-height: 1.8;
-        color: var(--dark);
+        font-size: 1.3rem;
+        line-height: 2;
+        color: var(--bg-color);
         font-family: 'Amiri', serif;
-        margin-bottom: 1rem;
-        font-weight: 400;
+        margin-bottom: 1.5rem;
+        font-weight: 500;
     }}
     
-    .badge {{
-        background: var(--accent);
-        color: white;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 0.8rem;
+    .adhkar-category {{
+        background: linear-gradient(135deg, var(--accent-color), #c8dedd);
+        color: var(--bg-color);
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-size: 0.9rem;
         font-weight: 600;
         display: inline-block;
-        margin-left: 8px;
+        font-family: 'Inter', sans-serif;
+        box-shadow: 0 2px 8px rgba(184, 207, 206, 0.3);
+        border: 1px solid rgba(184, 207, 206, 0.5);
     }}
     
-    .tag {{
-        background: var(--primary);
-        color: white;
-        padding: 6px 14px;
+    /* Enhanced Buttons */
+    .stButton > button {{
+        background: var(--text-color) !important;
+        color: var(--white) !important;
+        border: none !important;
+        border-radius: 10px !important;
+        padding: 10px 16px !important;
+        font-weight: 500 !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 0.9rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 8px rgba(127, 140, 170, 0.3) !important;
+        margin: 0 4px !important;
+    }}
+    
+    .stButton > button:hover {{
+        background: var(--bg-color) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(127, 140, 170, 0.4) !important;
+    }}
+    
+    /* Enhanced Sidebar */
+    .sidebar-card {{
+        background: var(--white);
+        padding: 1rem;
         border-radius: 12px;
-        font-size: 0.9rem;
-        font-weight: 500;
-        display: inline-block;
-        margin-top: 0.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--accent-color);
+        transition: all 0.3s ease;
     }}
     
-    .section {{
-        background: white;
-        padding: 1.5rem;
-        border-radius: 16px;
-        margin: 1.5rem 0;
-        border: 1px solid var(--border);
-        box-shadow: var(--card-shadow);
-    }}
-    
-    .search-container {{
-        background: white;
-        padding: 1.5rem;
-        border-radius: 16px;
-        margin: 1.5rem 0;
-        border: 1px solid var(--border);
-        box-shadow: var(--card-shadow);
-    }}
-    
-    .search-bar {{
-        display: flex;
-        gap: 15px;
-        margin-bottom: 1.5rem;
-    }}
-    
-    .search-input {{
-        flex: 1;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 14px 18px;
-        font-size: 1.1rem;
-        direction: rtl;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }}
-    
-    .search-input:focus {{
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px var(--primary-light);
-    }}
-    
-    .filter-section {{
-        display: flex;
-        gap: 15px;
-        margin-bottom: 1.5rem;
-    }}
-    
-    .filter-select {{
-        flex: 1;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 14px;
-        font-size: 1.1rem;
-        direction: rtl;
-        background: white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }}
-    
-    .action-button {{
-        background: var(--primary);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 12px 24px;
-        font-weight: 500;
-        font-size: 1rem;
-        transition: all 0.2s ease;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-    }}
-    
-    .action-button:hover {{
-        background: #1d4ed8;
+    .sidebar-card:hover {{
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }}
     
-    .secondary-button {{
-        background: white;
-        color: var(--primary);
-        border: 1px solid var(--primary);
-    }}
-    
-    .footer {{
+    .counter-display {{
         text-align: center;
-        padding: 2rem 0;
-        margin-top: 3rem;
-        color: var(--text);
-        border-top: 1px solid var(--border);
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--bg-color);
+        margin: 1rem 0;
+        font-family: 'Inter', sans-serif;
     }}
     
-    .stats-container {{
+    /* Enhanced Stats */
+    .stats-grid {{
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1.5rem;
-        margin: 2rem 0;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
     }}
     
     .stat-card {{
-        background: white;
-        padding: 1.5rem;
-        border-radius: 16px;
+        background: var(--white);
+        padding: 1rem;
+        border-radius: 12px;
         text-align: center;
-        box-shadow: var(--card-shadow);
-        border: 1px solid var(--border);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--accent-color);
+        transition: all 0.3s ease;
+    }}
+    
+    .stat-card:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }}
     
     .stat-number {{
-        font-size: 2rem;
+        font-size: 1.5rem;
         font-weight: 700;
-        color: var(--primary);
-        margin: 0.5rem 0;
+        color: var(--bg-color);
+        font-family: 'Inter', sans-serif;
     }}
     
     .stat-label {{
-        font-size: 1rem;
-        color: var(--text);
+        font-size: 0.9rem;
+        color: var(--text-color);
+        font-family: 'Inter', sans-serif;
     }}
     
-    .grid {{
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 2rem;
-        margin: 2rem 0;
+    /* Enhanced Input styling */
+    .stTextInput > div > div > input {{
+        border-radius: 12px !important;
+        border: 2px solid var(--accent-color) !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 1.1rem !important;
+        padding: 1rem !important;
+        background: var(--white) !important;
+        color: var(--bg-color) !important;
+        transition: all 0.3s ease !important;
     }}
     
-    @media (max-width: 768px) {{
-        .grid {{
-            grid-template-columns: 1fr;
-        }}
-        
-        .stats-container {{
-            grid-template-columns: repeat(2, 1fr);
-        }}
+    .stTextInput > div > div > input:focus {{
+        border-color: var(--text-color) !important;
+        box-shadow: 0 0 0 3px rgba(184, 207, 206, 0.2) !important;
+    }}
+    
+    .stSelectbox > div > div > select {{
+        border-radius: 12px !important;
+        border: 2px solid var(--accent-color) !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 1rem !important;
+        padding: 0.8rem !important;
+        background: var(--white) !important;
+        color: var(--bg-color) !important;
+    }}
+    
+    /* Enhanced Tab styling */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 8px;
+    }}
+    
+    .stTabs [data-baseweb="tab"] {{
+        background: var(--accent-color);
+        color: var(--bg-color);
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }}
+    
+    .stTabs [aria-selected="true"] {{
+        background: var(--bg-color);
+        color: var(--white);
+    }}
+    
+    /* Enhanced Success/Info messages */
+    .stSuccess {{
+        background: var(--accent-color);
+        color: var(--bg-color);
+        border-radius: 8px;
+    }}
+    
+    .stInfo {{
+        background: var(--text-color);
+        color: var(--white);
+        border-radius: 8px;
+    }}
+    
+    /* Smooth scrollbar */
+    ::-webkit-scrollbar {{
+        width: 8px;
+    }}
+    
+    ::-webkit-scrollbar-track {{
+        background: var(--light-bg);
+    }}
+    
+    ::-webkit-scrollbar-thumb {{
+        background: var(--accent-color);
+        border-radius: 4px;
+    }}
+    
+    ::-webkit-scrollbar-thumb:hover {{
+        background: var(--text-color);
     }}
 </style>
-
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 """, unsafe_allow_html=True)
 
-# Clean Arabic text
+# Clean Arabic text by removing diacritics
 def remove_tashkeel(text):
     tashkeel_pattern = re.compile(r'[\u064B-\u065F\u0670]')
     return tashkeel_pattern.sub('', text)
@@ -344,13 +356,14 @@ def load_data():
         return pd.DataFrame()
 
 def load_model_and_vectorizer():
-    """Load model and data"""
+    """Load model and data using joblib if available"""
     try:
         if JOBLIB_AVAILABLE:
             vectorizer = joblib.load("tfidf_vectorizer.pkl")
             df = pd.read_csv("adhkar_df.csv")
             return vectorizer, df
         else:
+            # Fallback to pickle if joblib not available
             with open("tfidf_vectorizer.pkl", 'rb') as f:
                 vectorizer = pickle.load(f)
             df = pd.read_csv("adhkar_df.csv")
@@ -360,16 +373,23 @@ def load_model_and_vectorizer():
         return None, pd.DataFrame()
 
 def semantic_search(query, vectorizer, df, top_k=5):
-    """Perform semantic search"""
+    """Perform semantic search using TF-IDF similarity"""
     try:
         if vectorizer is None:
             return pd.DataFrame(), []
         
+        # Transform query and data
         query_vector = vectorizer.transform([query])
         tfidf_matrix = vectorizer.transform(df['clean_text'])
+        
+        # Calculate cosine similarity using manual method
         similarities = manual_cosine_similarity(query_vector, tfidf_matrix)
+        
+        # Get top k most similar adhkar
         top_indices = similarities.argsort()[-top_k:][::-1]
         top_similarities = similarities[top_indices]
+        
+        # Filter out very low similarities
         meaningful_indices = [idx for idx, sim in zip(top_indices, top_similarities) if sim > 0.1]
         meaningful_similarities = [sim for sim in top_similarities if sim > 0.1]
         
@@ -383,255 +403,181 @@ def semantic_search(query, vectorizer, df, top_k=5):
         st.error(f"خطأ في البحث الدلالي: {e}")
         return pd.DataFrame(), []
 
-def display_adhkar_card(adhkar_text, category, index, similarity_score=None, is_similar=False):
-    """Display a single adhkar card"""
-    card_class = "card highlight-card" if is_similar else "card"
+def initialize_session_state():
+    """Initialize session state variables"""
+    if 'counter' not in st.session_state:
+        st.session_state.counter = 0
+    if 'daily_adhkar_count' not in st.session_state:
+        st.session_state.daily_adhkar_count = 0
+    if 'favorite_adhkar' not in st.session_state:
+        st.session_state.favorite_adhkar = []
+    if 'last_date' not in st.session_state:
+        st.session_state.last_date = datetime.now().date()
     
+    # Reset daily counter if it's a new day
+    if st.session_state.last_date != datetime.now().date():
+        st.session_state.daily_adhkar_count = 0
+        st.session_state.last_date = datetime.now().date()
+
+def display_adhkar_card(adhkar_text, category, index, similarity_score=None):
+    """Display a single adhkar card"""
     similarity_badge = ""
     if similarity_score is not None:
         similarity_percentage = int(similarity_score * 100)
-        similarity_badge = f'<span class="badge">تشابه: {similarity_percentage}%</span>'
+        similarity_badge = f" • تطابق {similarity_percentage}%"
     
     with st.container():
         st.markdown(f"""
-        <div class="{card_class}">
+        <div class="adhkar-card">
             <div class="adhkar-text">{adhkar_text}</div>
-            <div class="tag">{category}{similarity_badge}</div>
+            <span class="adhkar-category">{category}{similarity_badge}</span>
         </div>
         """, unsafe_allow_html=True)
         
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
         with col1:
-            st.button("📖 قراءة", key=f"read_{index}", use_container_width=True)
+            if st.button("📖 قراءة", key=f"read_{index}"):
+                st.session_state.counter += 1
+                st.session_state.daily_adhkar_count += 1
+                st.success("✅ تم احتساب القراءة")
         
         with col2:
-            if st.button("❤️ مفضلة", key=f"fav_{index}", use_container_width=True):
-                if 'favorite_adhkar' not in st.session_state:
-                    st.session_state.favorite_adhkar = []
+            if st.button("❤️ مفضلة", key=f"fav_{index}"):
                 if adhkar_text not in st.session_state.favorite_adhkar:
                     st.session_state.favorite_adhkar.append(adhkar_text)
                     st.success("✅ تم إضافة الذكر للمفضلة")
+                else:
+                    st.info("هذا الذكر موجود بالفعل في المفضلة")
         
         with col3:
-            if SKLEARN_AVAILABLE:
-                st.button("🔍 مشابه", key=f"similar_{index}", use_container_width=True)
+            if st.button("📋 نسخ", key=f"copy_{index}"):
+                st.code(adhkar_text, language="text")
         
         with col4:
-            if st.button("📋 نسخ", key=f"copy_{index}", use_container_width=True):
-                st.code(adhkar_text, language="text")
+            if st.button("🔗 مشاركة", key=f"share_{index}"):
+                st.info("تم تحضير الذكر للمشاركة")
 
 def main():
     # Initialize session state
-    if 'current_page' not in st.session_state:
-        st.session_state.current_page = 'home'
-    if 'favorite_adhkar' not in st.session_state:
-        st.session_state.favorite_adhkar = []
+    initialize_session_state()
     
     # Load data and model
     vectorizer, df = load_model_and_vectorizer()
     
     if df.empty:
-        df = load_data()
+        df = load_data()  # Fallback to regular data loading
         if df.empty:
             st.error("لا يمكن تحميل البيانات. يرجى التأكد من وجود ملف البيانات.")
             return
     
-    # Main container for content
-    st.markdown('<div class="container">', unsafe_allow_html=True)
-    
-    # Website header
-    st.markdown(f"""
-    <div class="header">
-        <div class="logo-container">
-            <img src="https://via.placeholder.com/120x120/2563eb/ffffff?text=BAYAAN" class="logo-img" alt="Bayaan Logo">
-        </div>
-        <div class="app-title">بيان - أذكار المسلم</div>
-        <div class="app-subtitle">اذكروا الله كثيراً لعلكم تفلحون</div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Navigation
+    # Main header with logo
     st.markdown("""
-    <div class="nav-container">
-        <div class="nav-button {'active' if st.session_state.current_page == 'home' else ''}" 
-             onclick="setPage('home')">الرئيسية</div>
-        <div class="nav-button {'active' if st.session_state.current_page == 'search' else ''}" 
-             onclick="setPage('search')">البحث</div>
-        <div class="nav-button {'active' if st.session_state.current_page == 'favorites' else ''}" 
-             onclick="setPage('favorites')">المفضلة</div>
+    <div class="main-header">
+        <div class="logo-container">
+            <img src="https://via.placeholder.com/80x80/B8CFCE/333446?text=🕌" class="logo-img" alt="Islamic Logo">
+        </div>
+        <h1>أذكار المسلم</h1>
+        <p>اذكروا الله كثيراً لعلكم تفلحون</p>
     </div>
-    
-    <script>
-    function setPage(page) {{
-        Streamlit.setComponentValue(page);
-    }}
-    </script>
     """, unsafe_allow_html=True)
     
-    # Handle navigation
-    if 'nav_click' not in st.session_state:
-        st.session_state.nav_click = None
-        
-    nav_click = st.session_state.get('nav_click', None)
-    if nav_click:
-        st.session_state.current_page = nav_click
-        st.session_state.nav_click = None
-        st.rerun()
+    # Search section at the top
+    st.markdown("""
+    <div class="search-section">
+        <div class="search-title">🔍 البحث في الأذكار والأدعية</div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Home page
-    if st.session_state.current_page == 'home':
-        st.markdown("## 🕌 مرحباً في أذكار المسلم")
+    # Search functionality
+    col1, col2 = st.columns([4, 1])
+    
+    with col1:
+        search_query = st.text_input(
+            "", 
+            placeholder="ابحث في الأذكار والأدعية... (مثال: الحمد لله، اللهم اغفر لي، الاستغفار)", 
+            label_visibility="collapsed"
+        )
+    
+    with col2:
+        categories = ['الكل'] + list(df['category'].unique())
+        selected_category = st.selectbox("الفئة", categories, label_visibility="collapsed")
+    
+    # Sidebar
+    with st.sidebar:
         st.markdown("""
-        <div class="section">
-            <h3>أذكار مختارة لكم اليوم</h3>
-            <p>مجموعة من الأذكار المختارة بعناية تناسب وقتك الحالي</p>
+        <div class="sidebar-card">
+            <h3 style="text-align: center; color: var(--bg-color);">📊 إحصائياتك</h3>
         </div>
         """, unsafe_allow_html=True)
         
-        # Time-based greeting
-        current_hour = datetime.now().hour
-        if 5 <= current_hour < 12:
-            greeting = "🌅 صباح الخير - أذكار الصباح"
-        elif 12 <= current_hour < 18:
-            greeting = "☀️ مساء الخير - أذكار المساء"
-        elif 18 <= current_hour < 22:
-            greeting = "🌆 مساء الخير - أذكار المساء"
-        else:
-            greeting = "🌙 تصبح على خير - أذكار النوم"
-            
+        # Daily statistics
         st.markdown(f"""
-        <div class="card highlight-card">
-            <div style="text-align: center; font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem;">
-                {greeting}
+        <div class="sidebar-card">
+            <div style="text-align: center;">
+                <div style="color: var(--text-color); font-size: 0.9rem;">أذكار اليوم</div>
+                <div class="counter-display">{st.session_state.daily_adhkar_count}</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
         
-        # Display 3 random adhkar
-        if 'random_adhkar' not in st.session_state:
-            st.session_state.random_adhkar = df.sample(3)
+        st.markdown(f"""
+        <div class="sidebar-card">
+            <div style="text-align: center;">
+                <div style="color: var(--text-color); font-size: 0.9rem;">إجمالي الأذكار</div>
+                <div class="counter-display">{st.session_state.counter}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
-        for idx, row in st.session_state.random_adhkar.iterrows():
-            display_adhkar_card(
-                row['clean_text'], 
-                row['category'], 
-                f"home_{idx}"
-            )
+        # Reset counter
+        if st.button("🔄 إعادة تعيين"):
+            st.session_state.counter = 0
+            st.session_state.daily_adhkar_count = 0
+            st.success("تم إعادة تعيين العداد")
         
-        # Refresh button
-        if st.button("🔄 تحديث الأذكار", use_container_width=True):
-            st.session_state.random_adhkar = df.sample(3)
-            st.rerun()
-        
-        # Stats
-        st.markdown("## 📊 إحصائيات")
+        # Random adhkar
         st.markdown("""
-        <div class="stats-container">
-            <div class="stat-card">
-                <div class="stat-number">{len(df)}</div>
-                <div class="stat-label">إجمالي الأذكار</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">{len(df['category'].unique())}</div>
-                <div class="stat-label">عدد الفئات</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">{len(st.session_state.favorite_adhkar)}</div>
-                <div class="stat-label">المفضلة</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">{random.randint(1000, 5000)}</div>
-                <div class="stat-label">المستخدمين</div>
-            </div>
+        <div class="sidebar-card">
+            <h4 style="text-align: center; color: var(--bg-color);">🎯 ذكر عشوائي</h4>
         </div>
         """, unsafe_allow_html=True)
         
-        # AI search
-        if SKLEARN_AVAILABLE and vectorizer is not None:
-            st.markdown("## 🤖 البحث الذكي")
-            with st.form("ai_search_form"):
-                user_dua = st.text_area(
-                    "اكتب حالتك أو طلبك:", 
-                    placeholder="مثال: اللهم اغفر لي، أريد الحماية من الشر، أدعية للرزق...",
-                    height=100
-                )
-                
-                if st.form_submit_button("🔍 بحث ذكي"):
-                    with st.spinner("جاري البحث عن الدعاء المناسب..."):
-                        # Transform query
-                        clean_dua = remove_tashkeel(user_dua.strip())
-                        if not clean_dua:
-                            st.info("❗ الرجاء إدخال نص صحيح")
-                        else:
-                            user_vector = vectorizer.transform([clean_dua])
-                            tfidf_matrix = vectorizer.transform(df['clean_text'])
-                            similarities = manual_cosine_similarity(user_vector, tfidf_matrix)
-                            best_idx = similarities.argmax()
-                            best_score = similarities[best_idx]
-                            
-                            if best_score < 0.1:
-                                st.info("❌ لم يتم العثور على دعاء مشابه")
-                            else:
-                                row = df.iloc[best_idx]
-                                st.success(f"✨ تم العثور على دعاء مناسب في فئة: **{row['category']}**")
-                                display_adhkar_card(
-                                    row['clean_text'], 
-                                    row['category'], 
-                                    "ai_result",
-                                    similarity_score=best_score,
-                                    is_similar=True
-                                )
+        if st.button("احصل على ذكر"):
+            random_adhkar = df.sample(1).iloc[0]
+            st.markdown(f"""
+            <div class="sidebar-card">
+                <div style="direction: rtl; text-align: right; color: var(--bg-color); font-family: 'Amiri', serif; line-height: 1.6;">
+                    {random_adhkar['clean_text']}
+                </div>
+                <div style="margin-top: 8px;">
+                    <span class="adhkar-category">{random_adhkar['category']}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
     
-    # Search page
-    elif st.session_state.current_page == 'search':
-        st.markdown("## 🔍 البحث في الأذكار")
-        
-        with st.container():
-            st.markdown('<div class="search-container">', unsafe_allow_html=True)
-            
-            # Search input
-            st.markdown('<div class="search-bar">', unsafe_allow_html=True)
-            search_query = st.text_input(
-                "", 
-                placeholder="ابحث في الأذكار والأدعية... (مثال: الصباح، الرزق، الحماية)",
-                key="search_input", 
-                label_visibility="collapsed"
-            )
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            # Filters
-            st.markdown('<div class="filter-section">', unsafe_allow_html=True)
-            categories = ['الكل'] + list(df['category'].unique())
-            selected_category = st.selectbox(
-                "الفئة", 
-                categories, 
-                index=0,
-                label_visibility="collapsed"
-            )
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Filter data
+    # Main content tabs
+    tab1, tab2, tab3 = st.tabs(["🔍 البحث", "⭐ المفضلة", "📊 الإحصائيات"])
+    
+    # Search Tab
+    with tab1:
+        # Filter data based on search and category
         filtered_df = df.copy()
         
         if search_query:
-            # Use semantic search if available
+            # Use semantic search if available, otherwise traditional search
             if SKLEARN_AVAILABLE and vectorizer is not None:
-                with st.spinner("جاري البحث الذكي..."):
-                    semantic_results, similarities = semantic_search(search_query, vectorizer, df, top_k=10)
-                    if not semantic_results.empty:
-                        st.success(f"🎯 تم العثور على {len(semantic_results)} نتيجة ذكية")
-                        for idx, (_, row) in enumerate(semantic_results.iterrows()):
-                            display_adhkar_card(
-                                row['clean_text'], 
-                                row['category'], 
-                                f"semantic_{idx}",
-                                similarity_score=similarities[idx],
-                                is_similar=True
-                            )
-                    else:
-                        st.info("لم يتم العثور على نتائج مطابقة")
+                semantic_results, similarities = semantic_search(search_query, vectorizer, df, top_k=10)
+                if not semantic_results.empty:
+                    st.success(f"🎯 تم العثور على {len(semantic_results)} نتيجة ذكية")
+                    for idx, (_, row) in enumerate(semantic_results.iterrows()):
+                        display_adhkar_card(
+                            row['clean_text'], 
+                            row['category'], 
+                            f"semantic_{idx}",
+                            similarity_score=similarities[idx]
+                        )
+                else:
+                    st.info("لم يتم العثور على نتائج مطابقة")
             else:
                 # Traditional search
                 filtered_df = filtered_df[
@@ -642,54 +588,81 @@ def main():
         if selected_category != 'الكل':
             filtered_df = filtered_df[filtered_df['category'] == selected_category]
         
-        # Display results
-        st.markdown(f"### نتائج البحث: {len(filtered_df)} ذكر")
-        
-        # Display adhkar cards
-        for idx, row in filtered_df.iterrows():
-            display_adhkar_card(row['clean_text'], row['category'], f"search_{idx}")
+        # Display results for traditional search or when no search query
+        if not search_query or (not SKLEARN_AVAILABLE or vectorizer is None):
+            st.markdown(f"**عدد النتائج: {len(filtered_df)}**")
+            
+            # Display adhkar cards
+            for idx, row in filtered_df.head(10).iterrows():
+                display_adhkar_card(row['clean_text'], row['category'], f"trad_{idx}")
     
-    # Favorites page
-    elif st.session_state.current_page == 'favorites':
-        st.markdown("## ⭐ الأذكار المفضلة")
-        
+    # Favorites Tab
+    with tab2:
         if st.session_state.favorite_adhkar:
             st.success(f"لديك {len(st.session_state.favorite_adhkar)} ذكر في المفضلة")
             
-            # Display favorites
             for i, adhkar in enumerate(st.session_state.favorite_adhkar):
                 st.markdown(f"""
-                <div class="card">
+                <div class="adhkar-card">
                     <div class="adhkar-text">{adhkar}</div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                col1, col2 = st.columns(2)
+                col1, col2 = st.columns([1, 1])
                 with col1:
-                    if st.button(f"🗑️ حذف", key=f"del_fav_{i}", use_container_width=True):
+                    if st.button(f"🗑️ حذف", key=f"del_fav_{i}"):
                         st.session_state.favorite_adhkar.remove(adhkar)
                         st.rerun()
                 
                 with col2:
-                    if st.button(f"📋 نسخ", key=f"copy_fav_{i}", use_container_width=True):
+                    if st.button(f"📋 نسخ", key=f"copy_fav_{i}"):
                         st.code(adhkar, language="text")
             
-            if st.button("🗑️ مسح جميع المفضلة", use_container_width=True):
+            if st.button("🗑️ مسح الكل"):
                 st.session_state.favorite_adhkar = []
                 st.success("تم مسح جميع الأذكار المفضلة")
                 st.rerun()
         else:
-            st.info("لا توجد أذكار مفضلة حتى الآن. أضف بعض الأذكار من قسم البحث!")
+            st.info("لا توجد أذكار مفضلة حتى الآن")
     
-    # Footer
-    st.markdown("""
-    <div class="footer">
-        <p>بيان - أذكار المسلم • إحياء سنة الذكر</p>
-        <p>جميع الحقوق محفوظة © {year}</p>
-    </div>
-    """.format(year=datetime.now().year), unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)  # Close container
+    # Statistics Tab
+    with tab3:
+        # Overall statistics
+        st.markdown("""
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{}</div>
+                <div class="stat-label">إجمالي الأذكار</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{}</div>
+                <div class="stat-label">عدد الفئات</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{}</div>
+                <div class="stat-label">أذكار اليوم</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{}</div>
+                <div class="stat-label">المفضلة</div>
+            </div>
+        </div>
+        """.format(
+            len(df),
+            len(df['category'].unique()),
+            st.session_state.daily_adhkar_count,
+            len(st.session_state.favorite_adhkar)
+        ), unsafe_allow_html=True)
+        
+        # Category distribution
+        st.markdown("### 📈 توزيع الأذكار حسب الفئات")
+        category_counts = df['category'].value_counts()
+        st.bar_chart(category_counts.head(10))
+        
+        # Most common categories
+        st.markdown("### 🏆 أكثر الفئات شيوعاً")
+        for i, (category, count) in enumerate(category_counts.head(5).items(), 1):
+            st.write(f"{i}. {category}: {count} ذكر")
 
 if __name__ == "__main__":
     main()
