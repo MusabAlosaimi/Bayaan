@@ -55,9 +55,9 @@ st.markdown("""
         --gray-300: #d1d5db;
         --gray-400: #9ca3af;
         --gray-500: #6b7280;
-        --gray-600: #4b5563;
-        --gray-700: #374151;
-        --gray-800: #1f2937;
+        --gray-600: #363d47;
+        --gray-700: #20252e;
+        --gray-800: #0f1217;
         --blue-500: #3b82f6;
         --purple-500: #8b5cf6;
         --yellow-100: #fef3c7;
@@ -219,7 +219,7 @@ st.markdown("""
     .badge-evening { background: #f3e8ff; color: #7c3aed; }
     .badge-general { background: #dbeafe; color: #1d4ed8; }
     .badge-istighfar { background: var(--emerald-100); color: var(--emerald-800); }
-    .badge-protection { background: var(--red-100); color: #dc2626; }
+    .badge-protection { background: var(--red-100); color: #1a97f0; }
     
     /* Arabic Text */
     .arabic-text {
