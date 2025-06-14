@@ -41,15 +41,15 @@ st.markdown("""
     
     /* Modern React-style Variables */
     :root {
-        --emerald-50: #ecfdf5;
-        --emerald-100: #d1fae5;
-        --emerald-500: #10b981;
-        --emerald-600: #059669;
-        --emerald-700: #047857;
-        --emerald-800: #065f46;
-        --teal-50: #f0fdfa;
-        --teal-500: #14b8a6;
-        --teal-600: #0d9488;
+        --emerald-50: #ecf3fd;
+        --emerald-100: #d1d4fa;
+        --emerald-500: #1310b9;
+        --emerald-600: #052796;
+        --emerald-700: #04094d;
+        --emerald-800: #040a2e;
+        --teal-50: #f0f1fd;
+        --teal-500: #1453b8;
+        --teal-600: #0d4a94;
         --gray-50: #f9fafb;
         --gray-100: #f3f4f6;
         --gray-300: #d1d5db;
@@ -61,7 +61,7 @@ st.markdown("""
         --blue-500: #3b82f6;
         --purple-500: #8b5cf6;
         --yellow-100: #fef3c7;
-        --yellow-800: #92400e;
+        --yellow-800: #0e8092;
         --red-100: #fee2e2;
         --red-500: #ef4444;
         --white: #ffffff;
@@ -299,11 +299,11 @@ st.markdown("""
     }
     
     .stat-card.blue {
-        background: linear-gradient(135deg, var(--blue-500) 0%, #6366f1 100%);
+        background: linear-gradient(135deg, var(--blue-500) 0%, #63aff1 100%);
     }
     
     .stat-card.purple {
-        background: linear-gradient(135deg, var(--purple-500) 0%, #ec4899 100%);
+        background: linear-gradient(135deg, var(--purple-500) 0%, #ec4848 100%);
     }
     
     .stat-number {
