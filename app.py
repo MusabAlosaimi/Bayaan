@@ -55,8 +55,8 @@ st.markdown("""
         --gray-300: #d1d5db;
         --gray-400: #9ca3af;
         --gray-500: #6b7280;
-        --gray-600: #363d47;
-        --gray-700: #20252e;
+        --gray-600: #242a33;
+        --gray-700: #0f1217;
         --gray-800: #0f1217;
         --blue-500: #3b82f6;
         --purple-500: #8b5cf6;
@@ -69,7 +69,7 @@ st.markdown("""
     
     /* Global Styles */
     .stApp {
-        background: linear-gradient(135deg, var(--emerald-50) 0%, var(--white) 50%, var(--teal-50) 100%);
+        background: linear-gradient(135deg, var(--emerald-50) 20%, var(--white) 50%, var(--teal-50) 100%);
         min-height: 100vh;
     }
     
@@ -141,7 +141,7 @@ st.markdown("""
     .tab-button.active {
         background: var(--emerald-600);
         color: white;
-        box-shadow: 0 2px 4px rgba(96, 165, 250, 0.2);
+        box-shadow: 0 5px 8px rgba(96, 165, 250, 0.2);
     }
     
     .tab-button:hover:not(.active) {
