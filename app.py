@@ -84,7 +84,7 @@ st.markdown("""
         color: white;
         padding: 2rem 0;
         margin: -1rem -1rem 2rem -1rem;
-        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
+        box-shadow: 0 10px 25px rgba(96, 165, 250, 0.2);
     }
     
     .header-content {
@@ -141,7 +141,7 @@ st.markdown("""
     .tab-button.active {
         background: var(--emerald-600);
         color: white;
-        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+        box-shadow: 0 2px 4px rgba(96, 165, 250, 0.2);
     }
     
     .tab-button:hover:not(.active) {
@@ -184,7 +184,7 @@ st.markdown("""
     
     .featured-card {
         border: 2px solid var(--emerald-500);
-        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+        box-shadow: 0 8px 25px rgba(96, 165, 250, 0.2);
     }
     
     .card-header {
@@ -262,7 +262,7 @@ st.markdown("""
     .btn-primary:hover {
         background: var(--emerald-700);
         transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+        box-shadow: 0 4px 8px rgba(96, 165, 250, 0.2);
     }
     
     .btn-ghost {
@@ -394,13 +394,13 @@ st.markdown("""
     .stButton > button:hover {
         background: var(--emerald-700) !important;
         transform: translateY(-1px) !important;
-        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3) !important;
+        box-shadow: 0 4px 8px rgba(96, 165, 250, 0.2) !important;
     }
     
     /* Active tab styling */
     .stButton > button:focus {
         background: var(--emerald-700) !important;
-        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+        box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2) !important;
     }
     
     .stTextInput > div > div > input {
@@ -413,7 +413,7 @@ st.markdown("""
     
     .stTextInput > div > div > input:focus {
         border-color: var(--emerald-500) !important;
-        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2) !important;
     }
 </style>
 """, unsafe_allow_html=True)
