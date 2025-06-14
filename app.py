@@ -601,8 +601,33 @@ def main():
     # Initialize session state
     initialize_session_state()
     
-    # Load data
+    # Load your AI model and data
+    vectorizer, model_df = load_model_and_vectorizer()
+    
+    # Load sample data as fallback
     adhkar_data = load_adhkar_data()
+    
+    # Use model data if available, otherwise use sample data
+    if not model_df.empty:
+        st.success("🤖 تم تحميل النموذج الذكي بنجاح!")
+        # Convert model data to format compatible with display
+        converted_data = []
+        for idx, row in model_df.iterrows():
+            converted_data.append({
+                "id": idx + 1,
+                "arabic": row.get('text', row.get('clean_text', '')),
+                "transliteration": f"Dhikr {idx + 1}",
+                "translation": f"Islamic remembrance from {row.get('category', 'general')} category",
+                "category": row.get('category', 'general'),
+                "source": "Islamic Sources",
+                "reward": "Great reward from Allah",
+                "count": 1,
+            })
+        adhkar_data = converted_data
+        ai_enabled = True
+    else:
+        st.warning("⚠️ لم يتم العثور على النموذج الذكي، سيتم استخدام البيانات التجريبية")
+        ai_enabled = False
     
     # Modern Header
     st.markdown("""
@@ -638,52 +663,129 @@ def main():
     # Display content based on active tab
     if st.session_state.active_tab == 'search':
         # Search Tab Content
-        st.markdown("### 🔍 البحث في الأذكار")
+        st.markdown("### 🔍 البحث الذكي في الأذكار")
+        
+        if ai_enabled:
+            st.markdown("**🤖 البحث الذكي بالذكاء الاصطناعي متاح**")
         
         # Modern Search Bar
         search_query = st.text_input(
             "",
-            placeholder="ابحث في الأذكار... (عربي أو إنجليزي)",
+            placeholder="ابحث في الأذكار... (عربي أو إنجليزي) - البحث الذكي متاح",
             label_visibility="collapsed",
             key="search_input"
         )
         
-        # Filter adhkar based on search
+        # AI-powered semantic search
         if search_query.strip():
-            filtered_adhkar = []
             query_lower = search_query.lower().strip()
             
-            for adhkar in adhkar_data:
-                # Create searchable text including all fields
-                searchable_text = f"{adhkar['arabic']} {adhkar['transliteration']} {adhkar['translation']} {adhkar['category']} {adhkar['source']}".lower()
+            if ai_enabled and vectorizer is not None:
+                # Use AI semantic search
+                st.info("🤖 جاري البحث الذكي...")
                 
-                # Simple search - check if query words are in the text
-                query_words = query_lower.split()
-                matches = 0
-                for word in query_words:
-                    if word in searchable_text:
-                        matches += 1
+                try:
+                    # Perform semantic search using your model
+                    semantic_results, similarities = semantic_search(search_query, vectorizer, model_df, top_k=10)
+                    
+                    if not semantic_results.empty:
+                        # Convert results back to display format
+                        ai_results = []
+                        for idx, (_, row) in enumerate(semantic_results.iterrows()):
+                            ai_results.append({
+                                "id": row.name,
+                                "arabic": row.get('text', row.get('clean_text', '')),
+                                "transliteration": f"AI Result {idx + 1}",
+                                "translation": f"Smart match for '{search_query}' - Category: {row.get('category', 'general')}",
+                                "category": row.get('category', 'general'),
+                                "source": "AI Semantic Search",
+                                "reward": f"Similarity: {similarities[idx]*100:.1f}%",
+                                "count": 1,
+                                "similarity": similarities[idx]
+                            })
+                        
+                        adhkar_to_display = ai_results
+                        st.success(f"🎯 البحث الذكي: تم العثور على {len(adhkar_to_display)} نتيجة متطابقة")
+                        
+                        # Also try to find the most similar dua
+                        if len(search_query.split()) <= 10:  # Only for shorter queries
+                            category, similar_text = find_similar_dua(search_query, vectorizer, model_df)
+                            if similar_text:
+                                st.markdown(f"""
+                                **🎯 اقتراح ذكي:** تم العثور على دعاء مناسب في فئة **{category}**
+                                
+                                *{similar_text[:100]}...*
+                                """)
+                    
+                    else:
+                        # Fallback to traditional search
+                        st.warning("🤖 البحث الذكي لم يجد نتائج، جاري التبديل للبحث التقليدي...")
+                        adhkar_to_display = []
+                        
+                        for adhkar in adhkar_data:
+                            searchable_text = f"{adhkar['arabic']} {adhkar['transliteration']} {adhkar['translation']} {adhkar['category']} {adhkar['source']}".lower()
+                            
+                            query_words = query_lower.split()
+                            matches = 0
+                            for word in query_words:
+                                if word in searchable_text:
+                                    matches += 1
+                            
+                            if matches > 0:
+                                similarity = matches / len(query_words)
+                                adhkar_to_display.append((adhkar, similarity))
+                        
+                        adhkar_to_display.sort(key=lambda x: x[1], reverse=True)
+                        adhkar_to_display = [adhkar for adhkar, _ in adhkar_to_display]
+                        
+                        if adhkar_to_display:
+                            st.info(f"📝 البحث التقليدي: تم العثور على {len(adhkar_to_display)} نتيجة")
                 
-                # Calculate similarity score
-                if matches > 0:
-                    similarity = matches / len(query_words)
-                    filtered_adhkar.append((adhkar, similarity))
+                except Exception as e:
+                    st.error(f"خطأ في البحث الذكي: {str(e)}")
+                    adhkar_to_display = adhkar_data
             
-            # Sort by similarity (best matches first)
-            filtered_adhkar.sort(key=lambda x: x[1], reverse=True)
-            adhkar_to_display = [adhkar for adhkar, _ in filtered_adhkar]
-            
-            if adhkar_to_display:
-                st.success(f"🎯 تم العثور على {len(adhkar_to_display)} نتيجة")
             else:
+                # Traditional search fallback
+                adhkar_to_display = []
+                
+                for adhkar in adhkar_data:
+                    searchable_text = f"{adhkar['arabic']} {adhkar['transliteration']} {adhkar['translation']} {adhkar['category']} {adhkar['source']}".lower()
+                    
+                    query_words = query_lower.split()
+                    matches = 0
+                    for word in query_words:
+                        if word in searchable_text:
+                            matches += 1
+                    
+                    if matches > 0:
+                        similarity = matches / len(query_words)
+                        adhkar_to_display.append((adhkar, similarity))
+                
+                adhkar_to_display.sort(key=lambda x: x[1], reverse=True)
+                adhkar_to_display = [adhkar for adhkar, _ in adhkar_to_display]
+                
+                if adhkar_to_display:
+                    st.success(f"🎯 تم العثور على {len(adhkar_to_display)} نتيجة")
+                else:
+                    st.info("❌ لم يتم العثور على نتائج مطابقة. جرب كلمات أخرى.")
+            
+            if not adhkar_to_display:
                 st.info("❌ لم يتم العثور على نتائج مطابقة. جرب كلمات أخرى.")
+        
         else:
-            adhkar_to_display = adhkar_data
+            adhkar_to_display = adhkar_data[:5]  # Show first 5 by default
             st.info("💡 اكتب في مربع البحث للعثور على أذكار معينة")
+            if ai_enabled:
+                st.markdown("**🤖 البحث الذكي:** سيتم استخدام الذكاء الاصطناعي لفهم قصدك والعثور على أفضل النتائج")
         
         # Display adhkar cards
         for adhkar in adhkar_to_display:
-            display_adhkar_card(adhkar)
+            # Handle both AI results and regular adhkar
+            if isinstance(adhkar, dict):
+                display_adhkar_card(adhkar)
+            else:
+                display_adhkar_card(adhkar[0] if isinstance(adhkar, tuple) else adhkar)
     
     elif st.session_state.active_tab == 'favorites':
         # Favorites Tab Content
