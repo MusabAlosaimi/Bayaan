@@ -722,7 +722,7 @@ def main():
     """, unsafe_allow_html=True)
     
     # Tab selection buttons
-    col2, col3, col4, col5 = st.columns(5)
+    col2, col3, col4, col5 = st.columns(4)
     
     with col2:
         if st.button("🤖 الذكي", key="tab_ai", use_container_width=True):
