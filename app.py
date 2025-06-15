@@ -793,11 +793,16 @@ def main():
             st.error("لا يمكن تحميل البيانات. يرجى التأكد من وجود ملف البيانات.")
             return
     
-    # Modern Header
+    # Modern Header with Logo
     ai_status = "🤖 مفعل" if (SKLEARN_AVAILABLE and vectorizer is not None) else "❌ غير متاح"
     st.markdown(f"""
     <div class="modern-header">
         <div class="header-content">
+            <div style="margin-bottom: 1rem;">
+                <img src="https://raw.githubusercontent.com/Bayaan/bayaanlogo1.png" 
+                     alt="Bayaan Logo" 
+                     style="height: 80px; width: auto; margin-bottom: 1rem; filter: brightness(0) invert(1);">
+            </div>
             <h1 class="header-title">أذكار المسلم الذكي</h1>
             <p class="header-subtitle">Islamic Adhkar AI - الذكاء الاصطناعي: {ai_status}</p>
         </div>
