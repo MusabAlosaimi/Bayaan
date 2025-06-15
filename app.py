@@ -801,7 +801,7 @@ def main():
             <div style="margin-bottom: 1rem;">
                 <img src="https://raw.githubusercontent.com/MusabAlosaimi/Bayaan/main/bayaanlogo1.png" 
                      alt="Bayaan Logo" 
-                     style="height: 80px; width: auto; margin-bottom: 1rem; filter: brightness(0) invert(1);">
+                     style="height: 150px; width: auto; margin-bottom: 1rem; filter: brightness(0) invert(1);">
             </div>
             <h1 class="header-title">أذكار المسلم الذكي</h1>
             <p class="header-subtitle">Islamic Adhkar AI - الذكاء الاصطناعي: {ai_status}</p>
