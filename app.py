@@ -34,14 +34,13 @@ except ImportError:
 import warnings
 warnings.filterwarnings('ignore')
 
-# Modern React-style CSS with Dark/Light Mode Support
+# Modern React-style CSS with updated colors
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
     
-    /* Modern Theme Variables */
+    /* Modern React-style Variables - Updated Color Palette */
     :root {
-        /* Light Theme Colors */
         --primary-50: #f0f9ff;
         --primary-100: #e0f2fe;
         --primary-500: #0ea5e9;
@@ -54,52 +53,28 @@ st.markdown("""
         --accent-50: #ecfeff;
         --accent-500: #06b6d4;
         --accent-600: #0891b2;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
         --success-100: #dcfce7;
         --success-500: #22c55e;
-        --success-700: #15803d;
         --success-800: #166534;
         --warning-100: #fef3c7;
         --warning-800: #92400e;
         --error-100: #fee2e2;
         --error-500: #ef4444;
-        
-        /* Light Theme Base Colors */
-        --bg-primary: #ffffff;
-        --bg-secondary: #f8fafc;
-        --bg-tertiary: #f1f5f9;
-        --text-primary: #1e293b;
-        --text-secondary: #475569;
-        --text-muted: #64748b;
-        --border-light: #e2e8f0;
-        --border-medium: #cbd5e1;
-        --shadow-light: rgba(15, 23, 42, 0.04);
-        --shadow-medium: rgba(15, 23, 42, 0.08);
-        --shadow-strong: rgba(15, 23, 42, 0.16);
-    }
-    
-    /* Dark Theme Colors (Auto-applied based on system preference) */
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --bg-tertiary: #334155;
-            --text-primary: #f1f5f9;
-            --text-secondary: #cbd5e1;
-            --text-muted: #94a3b8;
-            --border-light: #334155;
-            --border-medium: #475569;
-            --shadow-light: rgba(0, 0, 0, 0.1);
-            --shadow-medium: rgba(0, 0, 0, 0.2);
-            --shadow-strong: rgba(0, 0, 0, 0.4);
-        }
+        --white: #ffffff;
     }
     
     /* Global Styles */
     .stApp {
-        background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 50%, var(--bg-tertiary) 100%);
+        background: linear-gradient(135deg, var(--primary-50) 0%, var(--white) 50%, var(--accent-50) 100%);
         min-height: 100vh;
-        color: var(--text-primary);
-        transition: all 0.3s ease;
     }
     
     /* Hide default Streamlit elements */
@@ -113,7 +88,7 @@ st.markdown("""
         color: white;
         padding: 2rem 0;
         margin: -1rem -1rem 2rem -1rem;
-        box-shadow: 0 10px 25px var(--shadow-medium);
+        box-shadow: 0 10px 25px rgba(2, 132, 199, 0.2);
     }
     
     .header-content {
@@ -128,7 +103,7 @@ st.markdown("""
         font-weight: 700;
         margin-bottom: 0.5rem;
         font-family: 'Amiri', serif;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .header-subtitle {
@@ -138,21 +113,98 @@ st.markdown("""
         font-weight: 300;
     }
     
-    /* Modern Cards - Adaptive */
-    .modern-card {
-        background: var(--bg-primary);
+    /* Modern Tabs */
+    .modern-tabs {
+        display: flex;
+        background: var(--white);
+        border-radius: 12px;
+        padding: 6px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--gray-100);
+    }
+    
+    .tab-button {
+        flex: 1;
+        padding: 12px 20px;
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        font-size: 0.95rem;
+        color: var(--gray-600);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .tab-button.active {
+        background: var(--primary-600);
+        color: white;
+        box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);
+    }
+    
+    .tab-button:hover:not(.active) {
+        background: var(--primary-50);
+        color: var(--primary-700);
+    }
+    
+    /* Enhanced Search Container */
+    .search-container {
+        position: relative;
+        margin-bottom: 2rem;
+    }
+    
+    .search-wrapper {
+        position: relative;
+        background: var(--white);
         border-radius: 16px;
-        box-shadow: 0 4px 6px var(--shadow-light), 0 1px 3px var(--shadow-medium);
-        border: 1px solid var(--border-light);
+        border: 2px solid var(--gray-200);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .search-wrapper:focus-within {
+        border-color: var(--primary-500);
+        box-shadow: 0 4px 25px rgba(14, 165, 233, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .search-icon {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray-400);
+        font-size: 1.3rem;
+        z-index: 2;
+        transition: all 0.3s ease;
+    }
+    
+    .search-wrapper:focus-within .search-icon {
+        color: var(--primary-500);
+    }
+    
+    /* Modern Cards */
+    .modern-card {
+        background: var(--white);
+        border-radius: 16px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--gray-100);
         margin-bottom: 1.5rem;
         overflow: hidden;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s ease;
     }
     
     .modern-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 20px 25px var(--shadow-medium), 0 10px 10px var(--shadow-light);
-        border-color: var(--primary-500);
+        box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
+        border-color: var(--primary-200);
     }
     
     .featured-card {
@@ -160,7 +212,24 @@ st.markdown("""
         box-shadow: 0 8px 25px rgba(14, 165, 233, 0.2);
     }
     
-    /* Category Badges - Adaptive */
+    .card-header {
+        padding: 1.5rem 1.5rem 1rem 1.5rem;
+    }
+    
+    .card-content {
+        padding: 0 1.5rem 1.5rem 1.5rem;
+    }
+    
+    .card-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--gray-100);
+    }
+    
+    /* Category Badges */
     .category-badge {
         display: inline-block;
         padding: 6px 12px;
@@ -171,113 +240,87 @@ st.markdown("""
         text-transform: capitalize;
     }
     
-    /* Arabic Text - Adaptive */
+    .badge-morning { background: var(--warning-100); color: var(--warning-800); }
+    .badge-evening { background: var(--secondary-50); color: #7c3aed; }
+    .badge-general { background: var(--primary-100); color: var(--primary-800); }
+    .badge-istighfar { background: var(--success-100); color: var(--success-800); }
+    .badge-protection { background: var(--error-100); color: #dc2626; }
+    
+    /* Arabic Text */
     .arabic-text {
         font-family: 'Amiri', serif;
         font-size: 1.8rem;
         line-height: 1.8;
-        color: var(--text-primary);
+        color: var(--primary-800);
         margin-bottom: 1rem;
         text-align: right;
         direction: rtl;
     }
     
-    /* Modern Search Container - Dual Theme */
-    .search-container {
-        position: relative;
-        margin: 2rem auto;
-        max-width: 800px;
+    .translation {
+        color: var(--gray-700);
+        font-size: 1rem;
+        line-height: 1.6;
     }
     
-    .search-wrapper {
-        position: relative;
-        background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-        border-radius: 16px;
-        padding: 4px;
-        box-shadow: 0 20px 25px var(--shadow-light), 0 10px 10px var(--shadow-medium);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        border: 1px solid var(--border-medium);
-    }
-    
-    .search-wrapper:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 25px 50px var(--shadow-medium);
-        border-color: var(--primary-500);
-    }
-    
-    .search-inner {
-        position: relative;
-        background: var(--bg-primary);
-        border-radius: 12px;
-        display: flex;
+    /* Modern Buttons */
+    .modern-button {
+        display: inline-flex;
         align-items: center;
-        padding: 0;
-        overflow: hidden;
-        border: 1px solid var(--border-light);
-    }
-    
-    .search-icon {
-        position: absolute;
-        left: 20px;
-        z-index: 10;
-        color: var(--text-muted);
-        font-size: 1.25rem;
+        gap: 8px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: none;
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        font-size: 0.9rem;
+        cursor: pointer;
         transition: all 0.3s ease;
-        pointer-events: none;
+        text-decoration: none;
     }
     
-    .search-wrapper:focus-within .search-icon {
-        color: var(--primary-500);
-        transform: scale(1.1);
+    .btn-primary {
+        background: var(--primary-600);
+        color: white;
     }
     
-    /* Enhanced Search Input - Dual Theme */
-    .stTextInput > div > div > input {
-        background: transparent !important;
-        border: none !important;
-        color: var(--text-primary) !important;
-        font-size: 1.1rem !important;
-        font-weight: 400 !important;
-        padding: 20px 140px 20px 60px !important;
-        width: 100% !important;
-        outline: none !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    .btn-primary:hover {
+        background: var(--primary-700);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(2, 132, 199, 0.3);
     }
     
-    .stTextInput > div > div > input::placeholder {
-        color: var(--text-muted) !important;
-        font-weight: 400 !important;
-        font-style: normal !important;
+    .btn-ghost {
+        background: transparent;
+        color: var(--gray-500);
+        border: 1px solid var(--gray-200);
     }
     
-    .stTextInput > div > div > input:focus::placeholder {
-        color: var(--text-secondary) !important;
+    .btn-ghost:hover {
+        background: var(--gray-50);
+        color: var(--gray-700);
     }
     
-    /* Search Button - Adaptive */
-    .search-button-wrapper {
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 10;
+    .btn-ghost.active {
+        color: var(--error-500);
+        border-color: var(--error-200);
     }
     
-    /* Stats Cards - Adaptive */
+    /* Stats Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
     .stat-card {
         background: linear-gradient(135deg, var(--primary-500) 0%, var(--accent-500) 100%);
         color: white;
         padding: 1.5rem;
         border-radius: 12px;
         text-align: center;
-        box-shadow: 0 4px 6px var(--shadow-light);
-        transition: all 0.3s ease;
-    }
-    
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px var(--shadow-medium);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     
     .stat-card.blue {
@@ -299,25 +342,26 @@ st.markdown("""
         opacity: 0.9;
     }
     
-    /* Reward Box - Adaptive */
+    /* Reward Box */
     .reward-box {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-light);
-        border-radius: 12px;
-        padding: 1.5rem;
+        background: var(--primary-50);
+        border: 1px solid var(--primary-100);
+        border-radius: 8px;
+        padding: 1rem;
         margin: 1rem 0;
-        color: var(--text-primary);
-        box-shadow: 0 2px 4px var(--shadow-light);
     }
     
-    /* Empty State - Adaptive */
+    .reward-text {
+        color: var(--primary-800);
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    
+    /* Empty State */
     .empty-state {
         text-align: center;
         padding: 3rem;
-        color: var(--text-muted);
-        background: var(--bg-secondary);
-        border-radius: 16px;
-        border: 1px solid var(--border-light);
+        color: var(--gray-500);
     }
     
     .empty-icon {
@@ -326,30 +370,7 @@ st.markdown("""
         opacity: 0.3;
     }
     
-    /* Quick Search - Adaptive */
-    .quick-search-container {
-        margin-top: 24px;
-    }
-    
-    .quick-search-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 12px;
-        margin-top: 16px;
-    }
-    
-    /* Search Options Panel - Adaptive */
-    .search-options {
-        background: var(--bg-secondary);
-        backdrop-filter: blur(20px);
-        border-radius: 12px;
-        padding: 20px;
-        margin-top: 16px;
-        border: 1px solid var(--border-light);
-        box-shadow: 0 4px 6px var(--shadow-light);
-    }
-    
-    /* Responsive Design */
+    /* Responsive */
     @media (max-width: 768px) {
         .header-title {
             font-size: 2rem;
@@ -363,21 +384,25 @@ st.markdown("""
             font-size: 1.5rem;
         }
         
-        .search-container {
-            margin: 0 1rem 2rem 1rem;
+        .modern-tabs {
+            flex-direction: column;
+            gap: 4px;
         }
         
-        .stTextInput > div > div > input {
-            padding: 16px 120px 16px 50px !important;
-            font-size: 1rem !important;
-        }
-        
-        .quick-search-grid {
+        .stats-grid {
             grid-template-columns: 1fr;
         }
     }
     
-    /* Streamlit Component Overrides - Adaptive */
+    /* Streamlit overrides */
+    .stTabs [data-baseweb="tab-list"] {
+        display: none;
+    }
+    
+    .stTabs [data-baseweb="tab-panel"] {
+        padding: 0;
+    }
+    
     .stButton > button {
         background: var(--primary-600) !important;
         color: white !important;
@@ -385,85 +410,32 @@ st.markdown("""
         border-radius: 8px !important;
         padding: 12px 20px !important;
         font-weight: 500 !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        transition: all 0.3s ease !important;
         font-family: 'Inter', sans-serif !important;
         font-size: 0.95rem !important;
         width: 100% !important;
-        box-shadow: 0 2px 4px var(--shadow-light) !important;
     }
     
     .stButton > button:hover {
         background: var(--primary-700) !important;
         transform: translateY(-1px) !important;
-        box-shadow: 0 4px 8px var(--shadow-medium) !important;
+        box-shadow: 0 4px 8px rgba(2, 132, 199, 0.3) !important;
     }
     
+    /* Active tab styling */
     .stButton > button:focus {
         background: var(--primary-700) !important;
-        box-shadow: 0 0 0 2px var(--primary-500) !important;
+        box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2) !important;
     }
     
-    /* Select and Input Components - Adaptive */
-    .stSelectbox > div > div {
-        background: var(--bg-secondary) !important;
-        border: 1px solid var(--border-light) !important;
-        border-radius: 8px !important;
-        color: var(--text-primary) !important;
-    }
-    
-    .stSlider > div > div > div {
-        background: var(--bg-secondary) !important;
-        border-radius: 8px !important;
-    }
-    
-    /* Success/Warning/Error Messages - Adaptive */
-    .stSuccess {
-        background: var(--success-100) !important;
-        color: var(--success-800) !important;
-        border-left: 4px solid var(--success-500) !important;
-    }
-    
-    .stWarning {
-        background: var(--warning-100) !important;
-        color: var(--warning-800) !important;
-    }
-    
-    .stInfo {
-        background: var(--primary-50) !important;
-        color: var(--primary-800) !important;
-        border-left: 4px solid var(--primary-500) !important;
-    }
-    
-    /* Dark mode specific adjustments */
-    @media (prefers-color-scheme: dark) {
-        .stSuccess {
-            background: rgba(34, 197, 94, 0.1) !important;
-            color: #4ade80 !important;
-        }
-        
-        .stInfo {
-            background: rgba(14, 165, 233, 0.1) !important;
-            color: #38bdf8 !important;
-        }
-        
-        .stWarning {
-            background: rgba(251, 191, 36, 0.1) !important;
-            color: #fbbf24 !important;
-        }
-        
-        /* Code blocks in dark mode */
-        .stCode {
-            background: var(--bg-tertiary) !important;
-            color: var(--text-primary) !important;
-        }
-    }
-    
-    /* Theme transition animations */
-    * {
-        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
-    }
-</style>
-""", unsafe_allow_html=True) !important;
+    # Enhanced Search Input Styling - Modern Dark Theme
+    .stTextInput > div > div > input {
+        border-radius: 12px !important;
+        border: 1px solid #374151 !important;
+        padding: 14px 50px 14px 20px !important;
+        font-size: 1.1rem !important;
+        transition: all 0.3s ease !important;
+        background: #1f2937 !important;
         color: #e5e7eb !important;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
     }
@@ -673,33 +645,31 @@ def get_category_class(category):
     return category_classes.get(category, 'badge-general')
 
 def display_adhkar_card(adhkar_row, similarity_score=None, is_similar=False):
-    """Display a modern adhkar card using only Streamlit components with adaptive theming"""
+    """Display a modern adhkar card using only Streamlit components"""
     category_class = get_category_class(adhkar_row['category'])
     is_favorite = adhkar_row['text'] in st.session_state.favorite_adhkar
     
+    # Create card container using Streamlit's container with custom styling
+    card_style = """
+    <style>
+    div[data-testid="stVerticalBlock"] > div:has(div.adhkar-card) {
+        background: var(--white);
+        border-radius: 16px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--gray-100);
+        margin-bottom: 1.5rem;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    </style>
+    """
+    
     with st.container():
-        # Modern card styling that adapts to theme
-        st.markdown("""
-        <style>
-        .adhkar-card-container {
-            background: var(--bg-primary);
-            border-radius: 16px;
-            box-shadow: 0 4px 6px var(--shadow-light), 0 1px 3px var(--shadow-medium);
-            border: 1px solid var(--border-light);
-            margin-bottom: 1.5rem;
-            padding: 1.5rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .adhkar-card-container:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 25px var(--shadow-medium), 0 10px 10px var(--shadow-light);
-            border-color: var(--primary-500);
-        }
-        </style>
-        """, unsafe_allow_html=True)
+        # Apply card styling
+        st.markdown(card_style, unsafe_allow_html=True)
         
         # Mark this as an adhkar card for CSS targeting
-        st.markdown('<div class="adhkar-card-container">', unsafe_allow_html=True)
+        st.markdown('<div class="adhkar-card"></div>', unsafe_allow_html=True)
         
         # Category badge and favorite indicator
         col_badge, col_fav = st.columns([3, 1])
@@ -707,7 +677,7 @@ def display_adhkar_card(adhkar_row, similarity_score=None, is_similar=False):
             if adhkar_row['category'] == 'morning':
                 st.markdown("🌅 **أذكار الصباح**")
             elif adhkar_row['category'] == 'evening':
-                st.markdown("🌆 **أذكار المساء**")
+                st.markdown("🌅 **أذكار المساء**")
             elif adhkar_row['category'] == 'general':
                 st.markdown("📿 **أذكار عامة**")
             elif adhkar_row['category'] == 'istighfar':
@@ -728,21 +698,20 @@ def display_adhkar_card(adhkar_row, similarity_score=None, is_similar=False):
             similarity_percentage = int(similarity_score * 100)
             st.info(f"🎯 تشابه: {similarity_percentage}%")
         
-        # Arabic text in adaptive container
+        # Arabic text in a special container
         st.markdown(f"""
         <div style="
             font-family: 'Amiri', serif;
             font-size: 1.8rem;
             line-height: 1.8;
-            color: var(--text-primary);
+            color: var(--primary-800);
             margin: 1.5rem 0;
             text-align: right;
             direction: rtl;
-            background: var(--bg-secondary);
+            background: var(--primary-50);
             padding: 1.5rem;
             border-radius: 12px;
             border-right: 4px solid var(--primary-500);
-            box-shadow: 0 2px 4px var(--shadow-light);
         ">
             {adhkar_row['text']}
         </div>
@@ -778,8 +747,6 @@ def display_adhkar_card(adhkar_row, similarity_score=None, is_similar=False):
         with col4:
             if st.button("📋 نسخ", key=f"copy_{adhkar_row.name}", use_container_width=True):
                 st.code(adhkar_row['text'], language="text")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
 
 def show_installation_guide():
     """Show installation guide for missing dependencies"""
@@ -838,7 +805,7 @@ def main():
     <div class="modern-header">
         <div class="header-content">
             <div style="margin-bottom: 1rem;">
-                <img src="https://raw.githubusercontent.com/Bayaan/bayaanlogo1.png" 
+                <img src="https://raw.githubusercontent.com/Bayaan/main/bayaanlogo11.png" 
                      alt="Bayaan Logo" 
                      style="height: 80px; width: auto; margin-bottom: 1rem; filter: brightness(0) invert(1);">
             </div>
@@ -885,80 +852,38 @@ def main():
     elif st.session_state.active_tab == 'ai' and SKLEARN_AVAILABLE and vectorizer is not None:
         st.markdown("### 🤖 البحث الذكي بالذكاء الاصطناعي")
         
-        # Modern React-style Search Container
-        st.markdown("""
-        <div class="search-container">
-            <div class="search-wrapper">
-                <div class="search-inner">
-                    <div class="search-icon">🔍</div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # Unified Smart Search
+        st.markdown("#### 🔍 البحث الذكي الموحد")
         
-        # Create search input with React styling
-        col_search, col_button = st.columns([4, 1])
-        
-        with col_search:
-            search_query = st.text_input(
-                "",
-                placeholder="Search for components, styles, creators...",
-                help="ابحث بأي طريقة: بالكلمات المفتاحية، المعنى، أو وصف حالتك",
-                key="unified_search",
-                label_visibility="collapsed"
-            )
-        
-        with col_button:
-            search_pressed = st.button("Search", key="search_btn", use_container_width=True)
-        
-        # Add custom styling to make it look like the React component
-        st.markdown("""
-        <script>
-        // Apply React-style classes to search elements
-        setTimeout(() => {
-            const searchInput = document.querySelector('[data-testid="stTextInput"] input');
-            const searchButton = document.querySelector('[data-testid="stButton"] button');
+        # Create search container with custom styling
+        search_container = st.container()
+        with search_container:
+            col_search, col_button = st.columns([5, 1])
             
-            if (searchInput && searchButton) {
-                // Wrap search input
-                const wrapper = document.createElement('div');
-                wrapper.className = 'search-wrapper';
-                const inner = document.createElement('div');
-                inner.className = 'search-inner';
-                
-                // Add search icon
-                const icon = document.createElement('div');
-                icon.className = 'search-icon';
-                icon.innerHTML = '🔍';
-                
-                // Style button
-                searchButton.className += ' search-button';
-                
-                // Apply structure
-                searchInput.parentElement.style.position = 'relative';
-                inner.appendChild(icon);
-            }
-        }, 100);
-        </script>
-        """, unsafe_allow_html=True)
-        
-        # Search options in a React-style panel
-        with st.container():
-            st.markdown('<div class="search-options">', unsafe_allow_html=True)
-            
-            col1, col2, col3 = st.columns([1, 1, 1])
-            with col1:
-                search_mode = st.selectbox(
-                    "نوع البحث",
-                    ["ذكي شامل", "البحث عن دعاء مناسب", "بحث دلالي"],
-                    key="search_mode"
+            with col_search:
+                search_query = st.text_input(
+                    "",
+                    placeholder="ابحث عن الأذكار، أدخل دعاءك، أو صف حالتك...",
+                    help="ابحث بأي طريقة: بالكلمات المفتاحية، المعنى، أو وصف حالتك",
+                    key="unified_search",
+                    label_visibility="collapsed"
                 )
-            with col2:
-                search_depth = st.selectbox("عدد النتائج", [3, 5, 8, 10], index=1, key="unified_depth")
-            with col3:
-                min_similarity = st.slider("دقة التشابه", 0.1, 0.8, 0.2, 0.1, key="unified_similarity")
             
-            st.markdown('</div>', unsafe_allow_html=True)
+            with col_button:
+                search_pressed = st.button("🔍 بحث", key="search_btn", use_container_width=True)
+        
+        # Search options
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            search_mode = st.selectbox(
+                "نوع البحث",
+                ["ذكي شامل", "البحث عن دعاء مناسب", "بحث دلالي"],
+                key="search_mode"
+            )
+        with col2:
+            search_depth = st.selectbox("عدد النتائج", [3, 5, 8, 10], index=1, key="unified_depth")
+        with col3:
+            min_similarity = st.slider("دقة التشابه", 0.1, 0.8, 0.2, 0.1, key="unified_similarity")
         
         # Perform search when query is entered or button is pressed
         if search_query and (search_pressed or search_query):
@@ -1041,13 +966,8 @@ def main():
                     else:
                         st.info("لم يتم العثور على نتائج مناسبة. جرب كلمات أو عبارات مختلفة.")
         
-        # Quick search section with React styling
-        st.markdown("""
-        <div class="quick-search-container">
-            <h3 style="color: #f1f5f9; font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">🚀 بحث سريع</h3>
-            <div class="quick-search-grid">
-        """, unsafe_allow_html=True)
-        
+        # Quick search buttons
+        st.markdown("### 🚀 بحث سريع")
         quick_searches = [
             "الحماية والأمان", "الدعاء للوالدين", "الاستغفار والتوبة", 
             "الحمد والشكر", "طلب الهداية", "دعاء المريض"
@@ -1056,7 +976,7 @@ def main():
         cols = st.columns(3)
         for i, quick_search in enumerate(quick_searches):
             with cols[i % 3]:
-                if st.button(quick_search, key=f"quick_{i}", use_container_width=True):
+                if st.button(quick_search, key=f"quick_{i}"):
                     with st.spinner(f"🔍 جاري البحث عن: {quick_search}"):
                         semantic_results, similarities = semantic_search(
                             quick_search, vectorizer, df, top_k=3
@@ -1067,8 +987,6 @@ def main():
                                 display_adhkar_card(row, 
                                                   similarity_score=similarities[idx],
                                                   is_similar=True)
-        
-        st.markdown('</div></div>', unsafe_allow_html=True)
     
     # Favorites Tab
     elif st.session_state.active_tab == 'favorites':
