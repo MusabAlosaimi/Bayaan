@@ -463,9 +463,11 @@ st.markdown("""
         transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
     }
 </style>
+""", unsafe_allow_html=True)
+</style>
 """, unsafe_allow_html=True) !important;
         color: #e5e7eb !important;
-        box-shadow:  0.4px 6px rgba(0, 0, 0, 0.1) !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
     }
     
     .stTextInput > div > div > input:focus {
@@ -838,7 +840,7 @@ def main():
     <div class="modern-header">
         <div class="header-content">
             <div style="margin-bottom: 1rem;">
-                <img src="https://raw.githubusercontent.com/Bayaan/main/bayaanlogo11.png" 
+                <img src="https://raw.githubusercontent.com/Bayaan/bayaanlogo1.png" 
                      alt="Bayaan Logo" 
                      style="height: 80px; width: auto; margin-bottom: 1rem; filter: brightness(0) invert(1);">
             </div>
