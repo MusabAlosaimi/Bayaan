@@ -639,75 +639,74 @@ def get_category_class(category):
     return category_classes.get(category, 'badge-general')
 
 def display_adhkar_card(adhkar_row, similarity_score=None, is_similar=False):
-    """Display a modern adhkar card with fixed HTML structure"""
+    """Display a modern adhkar card with proper structure"""
     category_class = get_category_class(adhkar_row['category'])
-    
     is_favorite = adhkar_row['text'] in st.session_state.favorite_adhkar
-    read_count = 0  # Placeholder for read counts
-    
     card_class = "modern-card featured-card" if is_similar else "modern-card"
     
-    # Fixed HTML structure
-    st.markdown(f"""
-    <div class="{card_class}">
-        <div class="card-header">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                <span class="category-badge {category_class}">{adhkar_row['category']}</span>
-                <div style="display: flex; gap: 8px;">
-                    {'❤️' if is_favorite else '🤍'}
+    # Create a container for the card
+    with st.container():
+        # Card header with category and favorite status
+        st.markdown(f"""
+        <div class="{card_class}">
+            <div class="card-header">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                    <span class="category-badge {category_class}">{adhkar_row['category']}</span>
+                    <div style="display: flex; gap: 8px;">
+                        {'❤️' if is_favorite else '🤍'}
+                    </div>
                 </div>
+                
+                <div class="arabic-text">{adhkar_row['text']}</div>
             </div>
             
-            <div class="arabic-text">{adhkar_row['text']}</div>
-        </div>
+            <div class="card-content">
+        """, unsafe_allow_html=True)
         
-        <div class="card-content">
-            <div class="card-actions">
-                <div style="display: flex; gap: 8px; width: 100%;">
-    """, unsafe_allow_html=True)
-    
-    # Action buttons
-    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
-    
-    with col1:
-        if st.button("📖 قرأت هذا الذكر", key=f"read_{adhkar_row.name}"):
-            st.session_state.counter += 1
-            st.session_state.daily_adhkar_count += 1
-            st.success("✅ تم احتساب القراءة!")
-    
-    with col2:
-        fav_text = "💔 إزالة من المفضلة" if is_favorite else "❤️ إضافة للمفضلة"
-        if st.button(fav_text, key=f"fav_{adhkar_row.name}"):
-            if is_favorite:
-                st.session_state.favorite_adhkar.remove(adhkar_row['text'])
-                st.success("تم إزالة الذكر من المفضلة")
-            else:
-                st.session_state.favorite_adhkar.append(adhkar_row['text'])
-                st.success("✅ تم إضافة الذكر للمفضلة!")
-    
-    with col3:
-        if SKLEARN_AVAILABLE and st.button("🔍 مشابه", key=f"similar_{adhkar_row.name}"):
-            st.session_state.current_adhkar_for_similarity = adhkar_row['text']
-            st.rerun()
-    
-    with col4:
-        if st.button("📋 نسخ", key=f"copy_{adhkar_row.name}"):
-            st.code(adhkar_row['text'], language="text")
-    
-    # Close the HTML structure and display similarity score if available
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    if similarity_score is not None:
-        similarity_percentage = int(similarity_score * 100)
-        st.markdown(f"""
-                <div style="margin-top: 8px; width: 100%; text-align: center;">
+        # Display similarity score if available
+        if similarity_score is not None:
+            similarity_percentage = int(similarity_score * 100)
+            st.markdown(f"""
+                <div style="margin-bottom: 1rem; text-align: center;">
                     <span style="background: var(--success-100); color: var(--success-700); padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">
                         تشابه: {similarity_percentage}%
                     </span>
                 </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("</div></div></div>", unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
+        
+        # Action buttons section
+        st.markdown('<div class="card-actions">', unsafe_allow_html=True)
+        
+        # Action buttons
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+        
+        with col1:
+            if st.button("📖 قرأت هذا الذكر", key=f"read_{adhkar_row.name}"):
+                st.session_state.counter += 1
+                st.session_state.daily_adhkar_count += 1
+                st.success("✅ تم احتساب القراءة!")
+        
+        with col2:
+            fav_text = "💔 إزالة من المفضلة" if is_favorite else "❤️ إضافة للمفضلة"
+            if st.button(fav_text, key=f"fav_{adhkar_row.name}"):
+                if is_favorite:
+                    st.session_state.favorite_adhkar.remove(adhkar_row['text'])
+                    st.success("تم إزالة الذكر من المفضلة")
+                else:
+                    st.session_state.favorite_adhkar.append(adhkar_row['text'])
+                    st.success("✅ تم إضافة الذكر للمفضلة!")
+        
+        with col3:
+            if SKLEARN_AVAILABLE and st.button("🔍 مشابه", key=f"similar_{adhkar_row.name}"):
+                st.session_state.current_adhkar_for_similarity = adhkar_row['text']
+                st.rerun()
+        
+        with col4:
+            if st.button("📋 نسخ", key=f"copy_{adhkar_row.name}"):
+                st.code(adhkar_row['text'], language="text")
+        
+        # Close the HTML structure
+        st.markdown('</div></div></div>', unsafe_allow_html=True)
 
 def show_installation_guide():
     """Show installation guide for missing dependencies"""
