@@ -428,26 +428,27 @@ st.markdown("""
         box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2) !important;
     }
     
-    /* Enhanced Search Input Styling */
+    # Enhanced Search Input Styling - Modern Dark Theme
     .stTextInput > div > div > input {
-        border-radius: 16px !important;
-        border: 2px solid var(--gray-200) !important;
-        padding: 16px 20px 16px 50px !important;
+        border-radius: 12px !important;
+        border: 1px solid #374151 !important;
+        padding: 14px 50px 14px 20px !important;
         font-size: 1.1rem !important;
         transition: all 0.3s ease !important;
-        background: var(--white) !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+        background: #1f2937 !important;
+        color: #e5e7eb !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
     }
     
     .stTextInput > div > div > input:focus {
         border-color: var(--primary-500) !important;
-        box-shadow: 0 4px 25px rgba(14, 165, 233, 0.15) !important;
-        transform: translateY(-2px) !important;
+        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2) !important;
+        background: #374151 !important;
     }
     
     .stTextInput > div > div > input::placeholder {
-        color: var(--gray-400) !important;
-        font-style: italic !important;
+        color: #9ca3af !important;
+        font-style: normal !important;
     }
     
     /* Search Input Container Enhancement */
@@ -455,20 +456,25 @@ st.markdown("""
         position: relative !important;
     }
     
-    .stTextInput > div::before {
-        content: "🔍";
-        position: absolute;
-        left: 20px;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 2;
-        font-size: 1.2rem;
-        color: var(--gray-400);
-        transition: all 0.3s ease;
+    .search-button {
+        position: absolute !important;
+        right: 8px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        background: var(--primary-600) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 8px 16px !important;
+        font-size: 0.9rem !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        z-index: 10 !important;
     }
     
-    .stTextInput > div:focus-within::before {
-        color: var(--primary-500);
+    .search-button:hover {
+        background: var(--primary-700) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -799,9 +805,9 @@ def main():
     <div class="modern-header">
         <div class="header-content">
             <div style="margin-bottom: 1rem;">
-                <img src="https://raw.githubusercontent.com/MusabAlosaimi/Bayaan/main/bayaanlogo11.png" 
+                <img src="https://raw.githubusercontent.com/Bayaan/bayaanlogo1.png" 
                      alt="Bayaan Logo" 
-                     style="height: 150px; width: auto; margin-bottom: 1rem; filter: brightness(0) invert(1);">
+                     style="height: 80px; width: auto; margin-bottom: 1rem; filter: brightness(0) invert(1);">
             </div>
             <h1 class="header-title">أذكار المسلم الذكي</h1>
             <p class="header-subtitle">Islamic Adhkar AI - الذكاء الاصطناعي: {ai_status}</p>
@@ -846,72 +852,121 @@ def main():
     elif st.session_state.active_tab == 'ai' and SKLEARN_AVAILABLE and vectorizer is not None:
         st.markdown("### 🤖 البحث الذكي بالذكاء الاصطناعي")
         
-        # Smart Dua Finder
-        st.markdown("#### 🎯 البحث عن الدعاء المناسب")
-        user_dua = st.text_input(
-            "🤲 أدخل دعاءك أو وصف حالتك:", 
-            placeholder="مثال: اللهم اغفر لي، أريد الحماية، أشعر بالخوف...",
-            help="النموذج سيجد الدعاء الأنسب لحالتك",
-            key="dua_input"
-        )
+        # Unified Smart Search
+        st.markdown("#### 🔍 البحث الذكي الموحد")
         
-        if user_dua:
-            with st.spinner("🤖 جاري البحث عن الدعاء المناسب..."):
-                category, similar_text = find_similar_dua(user_dua, vectorizer, df)
-                
-                if similar_text:
-                    st.success(f"✨ تم العثور على دعاء مناسب في فئة: **{category}**")
-                    # Create a temporary row to display the result
-                    result_row = pd.Series({
-                        'text': similar_text,
-                        'category': category
-                    }, name='ai_result')
-                    display_adhkar_card(result_row, is_similar=True)
-                else:
-                    st.info(category)
-        
-        st.markdown("---")
-        
-        # Semantic search
-        st.markdown("#### 🧠 البحث الدلالي المتقدم")
-        semantic_query = st.text_input(
-            "ابحث بالمعنى", 
-            placeholder="مثال: الحماية من الشر، الدعاء للوالدين، الاستغفار...",
-            help="ابحث بالمعنى - النموذج سيفهم قصدك",
-            key="semantic_input"
-        )
-        
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            search_depth = st.selectbox("عمق البحث", [3, 5, 8, 10], index=1, key="depth_select")
-        with col2:
-            min_similarity = st.slider("حد التشابه الأدنى", 0.1, 0.8, 0.2, 0.1, key="similarity_slider")
-        
-        if semantic_query:
-            with st.spinner("🤖 جاري البحث الذكي..."):
-                semantic_results, similarities = semantic_search(
-                    semantic_query, vectorizer, df, top_k=search_depth
+        # Create search container with custom styling
+        search_container = st.container()
+        with search_container:
+            col_search, col_button = st.columns([5, 1])
+            
+            with col_search:
+                search_query = st.text_input(
+                    "",
+                    placeholder="ابحث عن الأذكار، أدخل دعاءك، أو صف حالتك...",
+                    help="ابحث بأي طريقة: بالكلمات المفتاحية، المعنى، أو وصف حالتك",
+                    key="unified_search",
+                    label_visibility="collapsed"
                 )
+            
+            with col_button:
+                search_pressed = st.button("🔍 بحث", key="search_btn", use_container_width=True)
+        
+        # Search options
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            search_mode = st.selectbox(
+                "نوع البحث",
+                ["ذكي شامل", "البحث عن دعاء مناسب", "بحث دلالي"],
+                key="search_mode"
+            )
+        with col2:
+            search_depth = st.selectbox("عدد النتائج", [3, 5, 8, 10], index=1, key="unified_depth")
+        with col3:
+            min_similarity = st.slider("دقة التشابه", 0.1, 0.8, 0.2, 0.1, key="unified_similarity")
+        
+        # Perform search when query is entered or button is pressed
+        if search_query and (search_pressed or search_query):
+            with st.spinner("🤖 جاري البحث الذكي..."):
                 
-                if not semantic_results.empty:
-                    # Filter by minimum similarity
-                    valid_indices = [i for i, sim in enumerate(similarities) if sim >= min_similarity]
-                    if valid_indices:
-                        filtered_results = semantic_results.iloc[valid_indices]
-                        filtered_similarities = [similarities[i] for i in valid_indices]
+                if search_mode == "البحث عن دعاء مناسب":
+                    # Smart Dua Finder
+                    category, similar_text = find_similar_dua(search_query, vectorizer, df)
+                    if similar_text:
+                        st.success(f"✨ تم العثور على دعاء مناسب في فئة: **{category}**")
+                        result_row = pd.Series({
+                            'text': similar_text,
+                            'category': category
+                        }, name='dua_result')
+                        display_adhkar_card(result_row, is_similar=True)
+                    else:
+                        st.info(category)
+                
+                elif search_mode == "بحث دلالي":
+                    # Semantic search
+                    semantic_results, similarities = semantic_search(
+                        search_query, vectorizer, df, top_k=search_depth
+                    )
+                    
+                    if not semantic_results.empty:
+                        valid_indices = [i for i, sim in enumerate(similarities) if sim >= min_similarity]
+                        if valid_indices:
+                            filtered_results = semantic_results.iloc[valid_indices]
+                            filtered_similarities = [similarities[i] for i in valid_indices]
+                            
+                            st.success(f"🎯 تم العثور على {len(filtered_results)} نتيجة")
+                            
+                            for idx, (_, row) in enumerate(filtered_results.iterrows()):
+                                display_adhkar_card(row, 
+                                                  similarity_score=filtered_similarities[idx], 
+                                                  is_similar=True)
+                        else:
+                            st.warning("لم يتم العثور على نتائج تتجاوز حد التشابه المحدد")
+                    else:
+                        st.info("لم يتم العثور على نتائج. جرب كلمات مختلفة.")
+                
+                else:  # "ذكي شامل"
+                    # Try both methods and combine results
+                    all_results = []
+                    
+                    # First try semantic search
+                    semantic_results, semantic_similarities = semantic_search(
+                        search_query, vectorizer, df, top_k=search_depth//2
+                    )
+                    
+                    if not semantic_results.empty:
+                        for idx, (_, row) in enumerate(semantic_results.iterrows()):
+                            if semantic_similarities[idx] >= min_similarity:
+                                all_results.append((row, semantic_similarities[idx], "دلالي"))
+                    
+                    # Then try dua finder
+                    category, similar_text = find_similar_dua(search_query, vectorizer, df)
+                    if similar_text:
+                        # Check if this result is already in semantic results
+                        is_duplicate = any(result[0]['text'] == similar_text for result in all_results)
+                        if not is_duplicate:
+                            dua_row = pd.Series({
+                                'text': similar_text,
+                                'category': category
+                            }, name='dua_smart_result')
+                            all_results.append((dua_row, 0.95, "دعاء مناسب"))
+                    
+                    if all_results:
+                        st.success(f"🎯 تم العثور على {len(all_results)} نتيجة ذكية")
                         
-                        st.success(f"🎯 تم العثور على {len(filtered_results)} نتيجة ذكية")
+                        # Sort by similarity score
+                        all_results.sort(key=lambda x: x[1], reverse=True)
                         
-                        for idx, (_, row) in enumerate(filtered_results.iterrows()):
+                        for idx, (row, similarity, search_type) in enumerate(all_results):
+                            # Add search type indicator
+                            st.markdown(f"**نوع البحث:** {search_type}")
                             display_adhkar_card(row, 
-                                              similarity_score=filtered_similarities[idx], 
+                                              similarity_score=similarity if similarity < 1 else None, 
                                               is_similar=True)
                     else:
-                        st.warning("لم يتم العثور على نتائج تتجاوز حد التشابه المحدد")
-                else:
-                    st.info("لم يتم العثور على نتائج. جرب كلمات مختلفة.")
+                        st.info("لم يتم العثور على نتائج مناسبة. جرب كلمات أو عبارات مختلفة.")
         
-        # Quick semantic search buttons
+        # Quick search buttons
         st.markdown("### 🚀 بحث سريع")
         quick_searches = [
             "الحماية والأمان", "الدعاء للوالدين", "الاستغفار والتوبة", 
@@ -922,15 +977,16 @@ def main():
         for i, quick_search in enumerate(quick_searches):
             with cols[i % 3]:
                 if st.button(quick_search, key=f"quick_{i}"):
-                    semantic_results, similarities = semantic_search(
-                        quick_search, vectorizer, df, top_k=3
-                    )
-                    if not semantic_results.empty:
-                        st.write(f"**نتائج: {quick_search}**")
-                        for idx, (_, row) in enumerate(semantic_results.iterrows()):
-                            display_adhkar_card(row, 
-                                              similarity_score=similarities[idx],
-                                              is_similar=True)
+                    with st.spinner(f"🔍 جاري البحث عن: {quick_search}"):
+                        semantic_results, similarities = semantic_search(
+                            quick_search, vectorizer, df, top_k=3
+                        )
+                        if not semantic_results.empty:
+                            st.markdown(f"**نتائج: {quick_search}**")
+                            for idx, (_, row) in enumerate(semantic_results.iterrows()):
+                                display_adhkar_card(row, 
+                                                  similarity_score=similarities[idx],
+                                                  is_similar=True)
     
     # Favorites Tab
     elif st.session_state.active_tab == 'favorites':
