@@ -639,74 +639,108 @@ def get_category_class(category):
     return category_classes.get(category, 'badge-general')
 
 def display_adhkar_card(adhkar_row, similarity_score=None, is_similar=False):
-    """Display a modern adhkar card with proper structure"""
+    """Display a modern adhkar card using only Streamlit components"""
     category_class = get_category_class(adhkar_row['category'])
     is_favorite = adhkar_row['text'] in st.session_state.favorite_adhkar
-    card_class = "modern-card featured-card" if is_similar else "modern-card"
     
-    # Create a container for the card
+    # Create card container using Streamlit's container with custom styling
+    card_style = """
+    <style>
+    div[data-testid="stVerticalBlock"] > div:has(div.adhkar-card) {
+        background: var(--white);
+        border-radius: 16px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--gray-100);
+        margin-bottom: 1.5rem;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    </style>
+    """
+    
     with st.container():
-        # Card header with category and favorite status
-        st.markdown(f"""
-        <div class="{card_class}">
-            <div class="card-header">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                    <span class="category-badge {category_class}">{adhkar_row['category']}</span>
-                    <div style="display: flex; gap: 8px;">
-                        {'❤️' if is_favorite else '🤍'}
-                    </div>
-                </div>
-                
-                <div class="arabic-text">{adhkar_row['text']}</div>
-            </div>
-            
-            <div class="card-content">
-        """, unsafe_allow_html=True)
+        # Apply card styling
+        st.markdown(card_style, unsafe_allow_html=True)
+        
+        # Mark this as an adhkar card for CSS targeting
+        st.markdown('<div class="adhkar-card"></div>', unsafe_allow_html=True)
+        
+        # Category badge and favorite indicator
+        col_badge, col_fav = st.columns([3, 1])
+        with col_badge:
+            if adhkar_row['category'] == 'morning':
+                st.markdown("🌅 **أذكار الصباح**")
+            elif adhkar_row['category'] == 'evening':
+                st.markdown("🌅 **أذكار المساء**")
+            elif adhkar_row['category'] == 'general':
+                st.markdown("📿 **أذكار عامة**")
+            elif adhkar_row['category'] == 'istighfar':
+                st.markdown("🤲 **استغفار**")
+            elif adhkar_row['category'] == 'protection':
+                st.markdown("🛡️ **حماية**")
+            else:
+                st.markdown(f"📖 **{adhkar_row['category']}**")
+        
+        with col_fav:
+            if is_favorite:
+                st.markdown("❤️")
+            else:
+                st.markdown("🤍")
         
         # Display similarity score if available
         if similarity_score is not None:
             similarity_percentage = int(similarity_score * 100)
-            st.markdown(f"""
-                <div style="margin-bottom: 1rem; text-align: center;">
-                    <span style="background: var(--success-100); color: var(--success-700); padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">
-                        تشابه: {similarity_percentage}%
-                    </span>
-                </div>
-            """, unsafe_allow_html=True)
+            st.info(f"🎯 تشابه: {similarity_percentage}%")
         
-        # Action buttons section
-        st.markdown('<div class="card-actions">', unsafe_allow_html=True)
+        # Arabic text in a special container
+        st.markdown(f"""
+        <div style="
+            font-family: 'Amiri', serif;
+            font-size: 1.8rem;
+            line-height: 1.8;
+            color: var(--primary-800);
+            margin: 1.5rem 0;
+            text-align: right;
+            direction: rtl;
+            background: var(--primary-50);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border-right: 4px solid var(--primary-500);
+        ">
+            {adhkar_row['text']}
+        </div>
+        """, unsafe_allow_html=True)
         
         # Action buttons
+        st.markdown("---")
         col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
         
         with col1:
-            if st.button("📖 قرأت هذا الذكر", key=f"read_{adhkar_row.name}"):
+            if st.button("📖 قرأت هذا الذكر", key=f"read_{adhkar_row.name}", use_container_width=True):
                 st.session_state.counter += 1
                 st.session_state.daily_adhkar_count += 1
                 st.success("✅ تم احتساب القراءة!")
         
         with col2:
             fav_text = "💔 إزالة من المفضلة" if is_favorite else "❤️ إضافة للمفضلة"
-            if st.button(fav_text, key=f"fav_{adhkar_row.name}"):
+            if st.button(fav_text, key=f"fav_{adhkar_row.name}", use_container_width=True):
                 if is_favorite:
                     st.session_state.favorite_adhkar.remove(adhkar_row['text'])
                     st.success("تم إزالة الذكر من المفضلة")
+                    st.rerun()
                 else:
                     st.session_state.favorite_adhkar.append(adhkar_row['text'])
                     st.success("✅ تم إضافة الذكر للمفضلة!")
+                    st.rerun()
         
         with col3:
-            if SKLEARN_AVAILABLE and st.button("🔍 مشابه", key=f"similar_{adhkar_row.name}"):
+            if SKLEARN_AVAILABLE and st.button("🔍 مشابه", key=f"similar_{adhkar_row.name}", use_container_width=True):
                 st.session_state.current_adhkar_for_similarity = adhkar_row['text']
                 st.rerun()
         
         with col4:
-            if st.button("📋 نسخ", key=f"copy_{adhkar_row.name}"):
+            if st.button("📋 نسخ", key=f"copy_{adhkar_row.name}", use_container_width=True):
                 st.code(adhkar_row['text'], language="text")
-        
-        # Close the HTML structure
-        st.markdown('</div></div></div>', unsafe_allow_html=True)
 
 def show_installation_guide():
     """Show installation guide for missing dependencies"""
