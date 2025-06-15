@@ -465,7 +465,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True) !important;
         color: #e5e7eb !important;
-        box-shadow:  4px 6px rgba(0, 0, 0, 0.1) !important;
+        box-shadow:  0.4px 6px rgba(0, 0, 0, 0.1) !important;
     }
     
     .stTextInput > div > div > input:focus {
