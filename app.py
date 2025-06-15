@@ -463,8 +463,6 @@ st.markdown("""
         transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
     }
 </style>
-""", unsafe_allow_html=True)
-</style>
 """, unsafe_allow_html=True) !important;
         color: #e5e7eb !important;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
@@ -507,6 +505,8 @@ st.markdown("""
         background: var(--primary-700) !important;
     }
 </style>
+""", unsafe_allow_html=True)
+
 # Clean Arabic text by removing diacritics
 def remove_tashkeel(text):
     tashkeel_pattern = re.compile(r'[\u064B-\u065F\u0670]')
