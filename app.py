@@ -507,8 +507,6 @@ st.markdown("""
         background: var(--primary-700) !important;
     }
 </style>
-""", unsafe_allow_html=True)
-
 # Clean Arabic text by removing diacritics
 def remove_tashkeel(text):
     tashkeel_pattern = re.compile(r'[\u064B-\u065F\u0670]')
