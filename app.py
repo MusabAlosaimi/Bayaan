@@ -34,22 +34,25 @@ except ImportError:
 import warnings
 warnings.filterwarnings('ignore')
 
-# Modern React-style CSS
+# Modern React-style CSS with updated colors
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
     
-    /* Modern React-style Variables */
+    /* Modern React-style Variables - Updated Color Palette */
     :root {
-        --emerald-50: #ecfdf5;
-        --emerald-100: #d1fae5;
-        --emerald-500: #10b981;
-        --emerald-600: #059669;
-        --emerald-700: #047857;
-        --emerald-800: #065f46;
-        --teal-50: #f0fdfa;
-        --teal-500: #14b8a6;
-        --teal-600: #0d9488;
+        --primary-50: #f0f9ff;
+        --primary-100: #e0f2fe;
+        --primary-500: #0ea5e9;
+        --primary-600: #0284c7;
+        --primary-700: #0369a1;
+        --primary-800: #075985;
+        --secondary-50: #fdf4ff;
+        --secondary-500: #a855f7;
+        --secondary-600: #9333ea;
+        --accent-50: #ecfeff;
+        --accent-500: #06b6d4;
+        --accent-600: #0891b2;
         --gray-50: #f9fafb;
         --gray-100: #f3f4f6;
         --gray-300: #d1d5db;
@@ -58,18 +61,19 @@ st.markdown("""
         --gray-600: #4b5563;
         --gray-700: #374151;
         --gray-800: #1f2937;
-        --blue-500: #3b82f6;
-        --purple-500: #8b5cf6;
-        --yellow-100: #fef3c7;
-        --yellow-800: #92400e;
-        --red-100: #fee2e2;
-        --red-500: #ef4444;
+        --success-100: #dcfce7;
+        --success-500: #22c55e;
+        --success-800: #166534;
+        --warning-100: #fef3c7;
+        --warning-800: #92400e;
+        --error-100: #fee2e2;
+        --error-500: #ef4444;
         --white: #ffffff;
     }
     
     /* Global Styles */
     .stApp {
-        background: linear-gradient(135deg, var(--emerald-50) 0%, var(--white) 50%, var(--teal-50) 100%);
+        background: linear-gradient(135deg, var(--primary-50) 0%, var(--white) 50%, var(--accent-50) 100%);
         min-height: 100vh;
     }
     
@@ -80,11 +84,11 @@ st.markdown("""
     
     /* Modern Header */
     .modern-header {
-        background: linear-gradient(135deg, var(--emerald-600) 0%, var(--teal-600) 100%);
+        background: linear-gradient(135deg, var(--primary-600) 0%, var(--accent-600) 100%);
         color: white;
         padding: 2rem 0;
         margin: -1rem -1rem 2rem -1rem;
-        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
+        box-shadow: 0 10px 25px rgba(2, 132, 199, 0.2);
     }
     
     .header-content {
@@ -139,30 +143,51 @@ st.markdown("""
     }
     
     .tab-button.active {
-        background: var(--emerald-600);
+        background: var(--primary-600);
         color: white;
-        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+        box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);
     }
     
     .tab-button:hover:not(.active) {
-        background: var(--emerald-50);
-        color: var(--emerald-700);
+        background: var(--primary-50);
+        color: var(--primary-700);
     }
     
-    /* Modern Search */
+    /* Enhanced Search Container */
     .search-container {
         position: relative;
         margin-bottom: 2rem;
     }
     
+    .search-wrapper {
+        position: relative;
+        background: var(--white);
+        border-radius: 16px;
+        border: 2px solid var(--gray-200);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .search-wrapper:focus-within {
+        border-color: var(--primary-500);
+        box-shadow: 0 4px 25px rgba(14, 165, 233, 0.15);
+        transform: translateY(-2px);
+    }
+    
     .search-icon {
         position: absolute;
-        left: 16px;
+        left: 20px;
         top: 50%;
         transform: translateY(-50%);
         color: var(--gray-400);
-        font-size: 1.2rem;
+        font-size: 1.3rem;
         z-index: 2;
+        transition: all 0.3s ease;
+    }
+    
+    .search-wrapper:focus-within .search-icon {
+        color: var(--primary-500);
     }
     
     /* Modern Cards */
@@ -179,12 +204,12 @@ st.markdown("""
     .modern-card:hover {
         transform: translateY(-4px);
         box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
-        border-color: var(--emerald-200);
+        border-color: var(--primary-200);
     }
     
     .featured-card {
-        border: 2px solid var(--emerald-500);
-        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+        border: 2px solid var(--primary-500);
+        box-shadow: 0 8px 25px rgba(14, 165, 233, 0.2);
     }
     
     .card-header {
@@ -215,18 +240,18 @@ st.markdown("""
         text-transform: capitalize;
     }
     
-    .badge-morning { background: var(--yellow-100); color: var(--yellow-800); }
-    .badge-evening { background: #f3e8ff; color: #7c3aed; }
-    .badge-general { background: #dbeafe; color: #1d4ed8; }
-    .badge-istighfar { background: var(--emerald-100); color: var(--emerald-800); }
-    .badge-protection { background: var(--red-100); color: #dc2626; }
+    .badge-morning { background: var(--warning-100); color: var(--warning-800); }
+    .badge-evening { background: var(--secondary-50); color: #7c3aed; }
+    .badge-general { background: var(--primary-100); color: var(--primary-800); }
+    .badge-istighfar { background: var(--success-100); color: var(--success-800); }
+    .badge-protection { background: var(--error-100); color: #dc2626; }
     
     /* Arabic Text */
     .arabic-text {
         font-family: 'Amiri', serif;
         font-size: 1.8rem;
         line-height: 1.8;
-        color: var(--emerald-800);
+        color: var(--primary-800);
         margin-bottom: 1rem;
         text-align: right;
         direction: rtl;
@@ -255,14 +280,14 @@ st.markdown("""
     }
     
     .btn-primary {
-        background: var(--emerald-600);
+        background: var(--primary-600);
         color: white;
     }
     
     .btn-primary:hover {
-        background: var(--emerald-700);
+        background: var(--primary-700);
         transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+        box-shadow: 0 4px 8px rgba(2, 132, 199, 0.3);
     }
     
     .btn-ghost {
@@ -277,8 +302,8 @@ st.markdown("""
     }
     
     .btn-ghost.active {
-        color: var(--red-500);
-        border-color: var(--red-200);
+        color: var(--error-500);
+        border-color: var(--error-200);
     }
     
     /* Stats Cards */
@@ -290,7 +315,7 @@ st.markdown("""
     }
     
     .stat-card {
-        background: linear-gradient(135deg, var(--emerald-500) 0%, var(--teal-500) 100%);
+        background: linear-gradient(135deg, var(--primary-500) 0%, var(--accent-500) 100%);
         color: white;
         padding: 1.5rem;
         border-radius: 12px;
@@ -299,11 +324,11 @@ st.markdown("""
     }
     
     .stat-card.blue {
-        background: linear-gradient(135deg, var(--blue-500) 0%, #6366f1 100%);
+        background: linear-gradient(135deg, var(--primary-500) 0%, #6366f1 100%);
     }
     
     .stat-card.purple {
-        background: linear-gradient(135deg, var(--purple-500) 0%, #ec4899 100%);
+        background: linear-gradient(135deg, var(--secondary-500) 0%, #ec4899 100%);
     }
     
     .stat-number {
@@ -319,15 +344,15 @@ st.markdown("""
     
     /* Reward Box */
     .reward-box {
-        background: var(--emerald-50);
-        border: 1px solid var(--emerald-100);
+        background: var(--primary-50);
+        border: 1px solid var(--primary-100);
         border-radius: 8px;
         padding: 1rem;
         margin: 1rem 0;
     }
     
     .reward-text {
-        color: var(--emerald-800);
+        color: var(--primary-800);
         font-size: 0.9rem;
         line-height: 1.5;
     }
@@ -379,7 +404,7 @@ st.markdown("""
     }
     
     .stButton > button {
-        background: var(--emerald-600) !important;
+        background: var(--primary-600) !important;
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
@@ -392,28 +417,58 @@ st.markdown("""
     }
     
     .stButton > button:hover {
-        background: var(--emerald-700) !important;
+        background: var(--primary-700) !important;
         transform: translateY(-1px) !important;
-        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3) !important;
+        box-shadow: 0 4px 8px rgba(2, 132, 199, 0.3) !important;
     }
     
     /* Active tab styling */
     .stButton > button:focus {
-        background: var(--emerald-700) !important;
-        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+        background: var(--primary-700) !important;
+        box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2) !important;
     }
     
+    /* Enhanced Search Input Styling */
     .stTextInput > div > div > input {
-        border-radius: 12px !important;
+        border-radius: 16px !important;
         border: 2px solid var(--gray-200) !important;
-        padding: 12px 16px 12px 40px !important;
+        padding: 16px 20px 16px 50px !important;
         font-size: 1.1rem !important;
         transition: all 0.3s ease !important;
+        background: var(--white) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
     }
     
     .stTextInput > div > div > input:focus {
-        border-color: var(--emerald-500) !important;
-        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+        border-color: var(--primary-500) !important;
+        box-shadow: 0 4px 25px rgba(14, 165, 233, 0.15) !important;
+        transform: translateY(-2px) !important;
+    }
+    
+    .stTextInput > div > div > input::placeholder {
+        color: var(--gray-400) !important;
+        font-style: italic !important;
+    }
+    
+    /* Search Input Container Enhancement */
+    .stTextInput > div {
+        position: relative !important;
+    }
+    
+    .stTextInput > div::before {
+        content: "🔍";
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2;
+        font-size: 1.2rem;
+        color: var(--gray-400);
+        transition: all 0.3s ease;
+    }
+    
+    .stTextInput > div:focus-within::before {
+        color: var(--primary-500);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -584,7 +639,7 @@ def get_category_class(category):
     return category_classes.get(category, 'badge-general')
 
 def display_adhkar_card(adhkar_row, similarity_score=None, is_similar=False):
-    """Display a modern adhkar card with the design from the second code"""
+    """Display a modern adhkar card with fixed HTML structure"""
     category_class = get_category_class(adhkar_row['category'])
     
     is_favorite = adhkar_row['text'] in st.session_state.favorite_adhkar
@@ -592,6 +647,7 @@ def display_adhkar_card(adhkar_row, similarity_score=None, is_similar=False):
     
     card_class = "modern-card featured-card" if is_similar else "modern-card"
     
+    # Fixed HTML structure
     st.markdown(f"""
     <div class="{card_class}">
         <div class="card-header">
@@ -638,12 +694,14 @@ def display_adhkar_card(adhkar_row, similarity_score=None, is_similar=False):
         if st.button("📋 نسخ", key=f"copy_{adhkar_row.name}"):
             st.code(adhkar_row['text'], language="text")
     
-    # Display similarity score if available
+    # Close the HTML structure and display similarity score if available
+    st.markdown("</div>", unsafe_allow_html=True)
+    
     if similarity_score is not None:
         similarity_percentage = int(similarity_score * 100)
         st.markdown(f"""
                 <div style="margin-top: 8px; width: 100%; text-align: center;">
-                    <span style="background: var(--emerald-100); color: var(--emerald-700); padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">
+                    <span style="background: var(--success-100); color: var(--success-700); padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 500;">
                         تشابه: {similarity_percentage}%
                     </span>
                 </div>
