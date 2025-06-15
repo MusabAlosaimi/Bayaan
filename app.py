@@ -799,7 +799,7 @@ def main():
     <div class="modern-header">
         <div class="header-content">
             <div style="margin-bottom: 1rem;">
-                <img src="https://raw.githubusercontent.com/MusabAlosaimi/Bayaan/main/bayaanlogo1.png" 
+                <img src="https://raw.githubusercontent.com/MusabAlosaimi/Bayaan/main/bayaanlogo11.png" 
                      alt="Bayaan Logo" 
                      style="height: 150px; width: auto; margin-bottom: 1rem; filter: brightness(0) invert(1);">
             </div>
