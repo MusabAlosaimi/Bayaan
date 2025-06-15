@@ -41,27 +41,27 @@ st.markdown("""
     
     /* Modern React-style Variables */
     :root {
-        --emerald-50: #ecf3fd;
-        --emerald-100: #d1d4fa;
-        --emerald-500: #1310b9;
-        --emerald-600: #052796;
-        --emerald-700: #04094d;
-        --emerald-800: #040a2e;
-        --teal-50: #f0f1fd;
-        --teal-500: #1453b8;
-        --teal-600: #0d4a94;
+        --emerald-50: #ecfdf5;
+        --emerald-100: #d1fae5;
+        --emerald-500: #10b981;
+        --emerald-600: #059669;
+        --emerald-700: #047857;
+        --emerald-800: #065f46;
+        --teal-50: #f0fdfa;
+        --teal-500: #14b8a6;
+        --teal-600: #0d9488;
         --gray-50: #f9fafb;
         --gray-100: #f3f4f6;
         --gray-300: #d1d5db;
         --gray-400: #9ca3af;
         --gray-500: #6b7280;
-        --gray-600: #242a33;
-        --gray-700: #0f1217;
-        --gray-800: #0f1217;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
         --blue-500: #3b82f6;
         --purple-500: #8b5cf6;
         --yellow-100: #fef3c7;
-        --yellow-800: #0e8092;
+        --yellow-800: #92400e;
         --red-100: #fee2e2;
         --red-500: #ef4444;
         --white: #ffffff;
@@ -69,7 +69,7 @@ st.markdown("""
     
     /* Global Styles */
     .stApp {
-        background: linear-gradient(135deg, var(--emerald-50) 20%, var(--white) 50%, var(--teal-50) 100%);
+        background: linear-gradient(135deg, var(--emerald-50) 0%, var(--white) 50%, var(--teal-50) 100%);
         min-height: 100vh;
     }
     
@@ -80,11 +80,11 @@ st.markdown("""
     
     /* Modern Header */
     .modern-header {
-        background: linear-gradient(135deg, var(--emerald-600) 30%, var(--teal-600) 100%);
+        background: linear-gradient(135deg, var(--emerald-600) 0%, var(--teal-600) 100%);
         color: white;
         padding: 2rem 0;
         margin: -1rem -1rem 2rem -1rem;
-        box-shadow: 0 20px 35px rgba(96, 165, 250, 0.2);
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
     }
     
     .header-content {
@@ -141,7 +141,7 @@ st.markdown("""
     .tab-button.active {
         background: var(--emerald-600);
         color: white;
-        box-shadow: 0 5px 8px rgba(96, 165, 250, 0.2);
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
     }
     
     .tab-button:hover:not(.active) {
@@ -178,13 +178,13 @@ st.markdown("""
     
     .modern-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 20px 35px rgba(0, 0, 0, 0.1);
-        border-color: var(--emerald-100);
+        box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
+        border-color: var(--emerald-200);
     }
     
     .featured-card {
         border: 2px solid var(--emerald-500);
-        box-shadow: 0 8px 35px rgba(96, 165, 250, 0.2);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
     }
     
     .card-header {
@@ -219,7 +219,7 @@ st.markdown("""
     .badge-evening { background: #f3e8ff; color: #7c3aed; }
     .badge-general { background: #dbeafe; color: #1d4ed8; }
     .badge-istighfar { background: var(--emerald-100); color: var(--emerald-800); }
-    .badge-protection { background: var(--red-100); color: #1a97f0; }
+    .badge-protection { background: var(--red-100); color: #dc2626; }
     
     /* Arabic Text */
     .arabic-text {
@@ -262,7 +262,7 @@ st.markdown("""
     .btn-primary:hover {
         background: var(--emerald-700);
         transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(96, 165, 250, 0.2);
+        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
     }
     
     .btn-ghost {
@@ -299,11 +299,11 @@ st.markdown("""
     }
     
     .stat-card.blue {
-        background: linear-gradient(135deg, var(--blue-500) 0%, #63aff1 100%);
+        background: linear-gradient(135deg, var(--blue-500) 0%, #6366f1 100%);
     }
     
     .stat-card.purple {
-        background: linear-gradient(135deg, var(--purple-500) 0%, #ec4848 100%);
+        background: linear-gradient(135deg, var(--purple-500) 0%, #ec4899 100%);
     }
     
     .stat-number {
@@ -394,13 +394,13 @@ st.markdown("""
     .stButton > button:hover {
         background: var(--emerald-700) !important;
         transform: translateY(-1px) !important;
-        box-shadow: 0 4px 8px rgba(96, 165, 250, 0.2) !important;
+        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3) !important;
     }
     
     /* Active tab styling */
     .stButton > button:focus {
         background: var(--emerald-700) !important;
-        box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2) !important;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
     }
     
     .stTextInput > div > div > input {
@@ -413,7 +413,7 @@ st.markdown("""
     
     .stTextInput > div > div > input:focus {
         border-color: var(--emerald-500) !important;
-        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2) !important;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -716,7 +716,7 @@ def main():
     # Time-based greeting
     greeting, time_period = get_time_based_greeting()
     st.markdown(f"""
-    <div class="reward-box" style="text-align: center; margin-top: 3rem;">
+    <div class="reward-box" style="text-align: center; margin-top: 1rem;">
         <h3>{greeting}</h3>
     </div>
     """, unsafe_allow_html=True)
