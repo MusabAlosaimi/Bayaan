@@ -852,80 +852,38 @@ def main():
     elif st.session_state.active_tab == 'ai' and SKLEARN_AVAILABLE and vectorizer is not None:
         st.markdown("### 🤖 البحث الذكي بالذكاء الاصطناعي")
         
-        # Modern React-style Search Container
-        st.markdown("""
-        <div class="search-container">
-            <div class="search-wrapper">
-                <div class="search-inner">
-                    <div class="search-icon">🔍</div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # Unified Smart Search
+        st.markdown("#### 🔍 البحث الذكي الموحد")
         
-        # Create search input with React styling
-        col_search, col_button = st.columns([4, 1])
-        
-        with col_search:
-            search_query = st.text_input(
-                "",
-                placeholder="Search for components, styles, creators...",
-                help="ابحث بأي طريقة: بالكلمات المفتاحية، المعنى، أو وصف حالتك",
-                key="unified_search",
-                label_visibility="collapsed"
-            )
-        
-        with col_button:
-            search_pressed = st.button("Search", key="search_btn", use_container_width=True)
-        
-        # Add custom styling to make it look like the React component
-        st.markdown("""
-        <script>
-        // Apply React-style classes to search elements
-        setTimeout(() => {
-            const searchInput = document.querySelector('[data-testid="stTextInput"] input');
-            const searchButton = document.querySelector('[data-testid="stButton"] button');
+        # Create search container with custom styling
+        search_container = st.container()
+        with search_container:
+            col_search, col_button = st.columns([5, 1])
             
-            if (searchInput && searchButton) {
-                // Wrap search input
-                const wrapper = document.createElement('div');
-                wrapper.className = 'search-wrapper';
-                const inner = document.createElement('div');
-                inner.className = 'search-inner';
-                
-                // Add search icon
-                const icon = document.createElement('div');
-                icon.className = 'search-icon';
-                icon.innerHTML = '🔍';
-                
-                // Style button
-                searchButton.className += ' search-button';
-                
-                // Apply structure
-                searchInput.parentElement.style.position = 'relative';
-                inner.appendChild(icon);
-            }
-        }, 100);
-        </script>
-        """, unsafe_allow_html=True)
-        
-        # Search options in a React-style panel
-        with st.container():
-            st.markdown('<div class="search-options">', unsafe_allow_html=True)
-            
-            col1, col2, col3 = st.columns([1, 1, 1])
-            with col1:
-                search_mode = st.selectbox(
-                    "نوع البحث",
-                    ["ذكي شامل", "البحث عن دعاء مناسب", "بحث دلالي"],
-                    key="search_mode"
+            with col_search:
+                search_query = st.text_input(
+                    "",
+                    placeholder="ابحث عن الأذكار، أدخل دعاءك، أو صف حالتك...",
+                    help="ابحث بأي طريقة: بالكلمات المفتاحية، المعنى، أو وصف حالتك",
+                    key="unified_search",
+                    label_visibility="collapsed"
                 )
-            with col2:
-                search_depth = st.selectbox("عدد النتائج", [3, 5, 8, 10], index=1, key="unified_depth")
-            with col3:
-                min_similarity = st.slider("دقة التشابه", 0.1, 0.8, 0.2, 0.1, key="unified_similarity")
             
-            st.markdown('</div>', unsafe_allow_html=True)
+            with col_button:
+                search_pressed = st.button("🔍 بحث", key="search_btn", use_container_width=True)
+        
+        # Search options
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            search_mode = st.selectbox(
+                "نوع البحث",
+                ["ذكي شامل", "البحث عن دعاء مناسب", "بحث دلالي"],
+                key="search_mode"
+            )
+        with col2:
+            search_depth = st.selectbox("عدد النتائج", [3, 5, 8, 10], index=1, key="unified_depth")
+        with col3:
+            min_similarity = st.slider("دقة التشابه", 0.1, 0.8, 0.2, 0.1, key="unified_similarity")
         
         # Perform search when query is entered or button is pressed
         if search_query and (search_pressed or search_query):
@@ -1008,13 +966,8 @@ def main():
                     else:
                         st.info("لم يتم العثور على نتائج مناسبة. جرب كلمات أو عبارات مختلفة.")
         
-        # Quick search section with React styling
-        st.markdown("""
-        <div class="quick-search-container">
-            <h3 style="color: #f1f5f9; font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">🚀 بحث سريع</h3>
-            <div class="quick-search-grid">
-        """, unsafe_allow_html=True)
-        
+        # Quick search buttons
+        st.markdown("### 🚀 بحث سريع")
         quick_searches = [
             "الحماية والأمان", "الدعاء للوالدين", "الاستغفار والتوبة", 
             "الحمد والشكر", "طلب الهداية", "دعاء المريض"
@@ -1023,7 +976,7 @@ def main():
         cols = st.columns(3)
         for i, quick_search in enumerate(quick_searches):
             with cols[i % 3]:
-                if st.button(quick_search, key=f"quick_{i}", use_container_width=True):
+                if st.button(quick_search, key=f"quick_{i}"):
                     with st.spinner(f"🔍 جاري البحث عن: {quick_search}"):
                         semantic_results, similarities = semantic_search(
                             quick_search, vectorizer, df, top_k=3
@@ -1034,8 +987,6 @@ def main():
                                 display_adhkar_card(row, 
                                                   similarity_score=similarities[idx],
                                                   is_similar=True)
-        
-        st.markdown('</div></div>', unsafe_allow_html=True)
     
     # Favorites Tab
     elif st.session_state.active_tab == 'favorites':
