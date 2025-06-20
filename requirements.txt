@@ -1,96 +1,166 @@
-streamlit
-pandas
-numpy
-scikit-learn
-joblib
-streamlit>=1.28.0
-pandas>=1.5.0
-numpy>=1.24.0
-scikit-learn>=1.3.0
-datasets>=2.14.0
-transformers>=4.30.0
-sentence-transformers>=2.2.0
-gensim>=4.3.0
-joblib>=1.3.0
-arabic-reshaper>=3.0.0
-python-bidi>=0.4.0
-torch>=2.0.0
-huggingface-hub>=0.16.0
+# requirements.txt for Streamlit Cloud
+streamlit==1.28.0
+pandas==1.5.3
+numpy==1.24.0
+scikit-learn==1.3.0
+datasets==2.14.0
+huggingface-hub==0.16.0
 
-## 🚀 Setup Instructions
+# Optional but recommended for better performance
+joblib==1.3.0
 
-### 1. Installation
-```bash
-# Clone or download the project
-git clone <your-repo> 
-cd quran-tafseer-app
+# Note: Removed heavy dependencies that might cause deployment issues:
+# - transformers (very large, comment out if not using BERT)
+# - sentence-transformers (very large)
+# - gensim (can be large)
+# - torch (extremely large)
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or
-venv\Scripts\activate  # Windows
+# For local development, you can uncomment these:
+# transformers>=4.30.0
+# sentence-transformers>=2.2.0
+# gensim>=4.3.0
 
-# Install requirements
-pip install -r requirements.txt
-```
+---
 
-### 2. Model Files Structure
-```
-quran-tafseer-app/
-├── app.py                 # Main application file
-├── requirements.txt       # Dependencies
-├── bert_vectors.npy      # BERT embeddings (required)
-├── w2v_vectors.npy       # Word2Vec document vectors (required)
-├── word2vec.model        # Trained Word2Vec model (required)
-├── README.md             # Documentation
-└── models/               # Optional: model folder
-    ├── preprocessing/    # Text preprocessing scripts
-    └── training/         # Model training scripts
-```
+# .streamlit/config.toml
+[server]
+maxUploadSize = 200
+enableCORS = false
+enableXsrfProtection = false
 
-### 3. Generating Model Files
+[browser]
+gatherUsageStats = false
 
-#### A. BERT Vectors (bert_vectors.npy)
-```python
-# Script to generate BERT vectors
-from datasets import load_dataset
-from sentence_transformers import SentenceTransformer
-import numpy as np
+[theme]
+primaryColor = "#22c55e"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0fdf4"
+textColor = "#1f2937"
+font = "sans serif"
+
+---
+
+# packages.txt (system packages for Streamlit Cloud)
+# Add any system-level dependencies here if needed
+# For example:
+# libgl1-mesa-glx
+# libglib2.0-0
+
+---
+
+# Lightweight version of app.py for Streamlit Cloud deployment
+# This version removes heavy ML dependencies and focuses on core functionality
+
+import streamlit as st
+
+# Page configuration MUST be first
+st.set_page_config(
+    page_title="تفسير القرآن الذكي - Smart Quran Tafseer",
+    page_icon="📖",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
 import pandas as pd
-
-# Load dataset
-dataset = load_dataset("MohamedRashad/Quran-Tafseer")
-df = pd.DataFrame(dataset['train'])
-
-# Load pre-trained Arabic BERT model
-model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
-# Or use: 'aubmindlab/bert-base-arabertv02'
-
-# Prepare texts
-texts = df['text'].fillna('').tolist()  # or df['ayah'] depending on column name
-
-# Generate embeddings
-print("Generating BERT embeddings...")
-embeddings = model.encode(texts, show_progress_bar=True, batch_size=32)
-
-# Save vectors
-np.save('bert_vectors.npy', embeddings)
-print(f"BERT vectors saved: {embeddings.shape}")
-```
-
-#### B. Word2Vec Model and Vectors (word2vec.model & w2v_vectors.npy)
-```python
-# Script to generate Word2Vec model and document vectors
-from datasets import load_dataset
-from gensim.models import Word2Vec
 import numpy as np
-import pandas as pd
+from datetime import datetime
 import re
-from collections import defaultdict
+from collections import Counter
+
+# Try to import optional dependencies with better error handling
+PACKAGES_STATUS = {
+    'datasets': False,
+    'sklearn': False,
+    'joblib': False
+}
+
+try:
+    from datasets import load_dataset
+    PACKAGES_STATUS['datasets'] = True
+except ImportError:
+    st.warning("⚠️ datasets package not available. Using fallback data.")
+
+try:
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    PACKAGES_STATUS['sklearn'] = True
+except ImportError:
+    st.warning("⚠️ scikit-learn not available. Limited search functionality.")
+
+try:
+    import joblib
+    PACKAGES_STATUS['joblib'] = True
+except ImportError:
+    import pickle  # fallback
+
+import warnings
+warnings.filterwarnings('ignore')
+
+# Lightweight CSS for Streamlit Cloud
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    :root {
+        --primary-color: #22c55e;
+        --secondary-color: #3b82f6;
+        --accent-color: #f59e0b;
+    }
+    
+    .main-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .arabic-text {
+        font-family: 'Amiri', serif;
+        font-size: 1.5rem;
+        line-height: 2;
+        text-align: right;
+        direction: rtl;
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        border-right: 4px solid var(--primary-color);
+        margin: 1rem 0;
+    }
+    
+    .verse-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+        background: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        margin: 2px;
+    }
+    
+    .status-active {
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    .status-inactive {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 def preprocess_arabic_text(text):
-    """Enhanced Arabic text preprocessing"""
+    """Lightweight Arabic text preprocessing"""
     if not isinstance(text, str):
         return ""
     
@@ -98,422 +168,374 @@ def preprocess_arabic_text(text):
     tashkeel_pattern = re.compile(r'[\u064B-\u065F\u0670]')
     text = tashkeel_pattern.sub('', text)
     
-    # Normalize Arabic letters
+    # Basic normalization
     text = re.sub(r'[إأآا]', 'ا', text)
     text = re.sub(r'ة', 'ه', text)
     text = re.sub(r'ي', 'ى', text)
     
-    # Remove extra whitespace and punctuation
-    text = re.sub(r'[^\u0600-\u06FF\s]', ' ', text)
+    # Clean whitespace
     text = re.sub(r'\s+', ' ', text).strip()
-    
     return text
 
-# Load dataset
-dataset = load_dataset("MohamedRashad/Quran-Tafseer")
-df = pd.DataFrame(dataset['train'])
-
-# Prepare corpus for Word2Vec training
-print("Preprocessing texts...")
-processed_texts = []
-for text in df['text'].fillna(''):
-    clean_text = preprocess_arabic_text(text)
-    if clean_text:
-        processed_texts.append(clean_text.split())
-
-# Add tafseer texts if available
-if 'tafseer' in df.columns:
-    for text in df['tafseer'].fillna(''):
-        clean_text = preprocess_arabic_text(text)
-        if clean_text:
-            processed_texts.append(clean_text.split())
-
-print(f"Corpus size: {len(processed_texts)} documents")
-
-# Train Word2Vec model
-print("Training Word2Vec model...")
-model = Word2Vec(
-    sentences=processed_texts,
-    vector_size=300,        # Embedding dimension
-    window=10,              # Context window size
-    min_count=2,            # Minimum word frequency
-    workers=4,              # Number of threads
-    epochs=100,             # Training epochs
-    sg=1,                   # Skip-gram model
-    hs=0,                   # Use negative sampling
-    negative=10,            # Negative sampling rate
-    seed=42                 # Random seed for reproducibility
-)
-
-# Save the trained model
-model.save('word2vec.model')
-print("Word2Vec model saved!")
-
-# Generate document vectors using trained model
-print("Generating document vectors...")
-def get_document_vector(doc_words, model, vector_size=300):
-    """Get document vector by averaging word vectors"""
-    valid_words = [word for word in doc_words if word in model.wv]
-    if not valid_words:
-        return np.zeros(vector_size)
-    
-    word_vectors = [model.wv[word] for word in valid_words]
-    return np.mean(word_vectors, axis=0)
-
-# Create document vectors for the original dataset
-doc_vectors = []
-for text in df['text'].fillna(''):
-    clean_text = preprocess_arabic_text(text)
-    words = clean_text.split() if clean_text else []
-    doc_vector = get_document_vector(words, model)
-    doc_vectors.append(doc_vector)
-
-# Convert to numpy array and save
-doc_vectors = np.array(doc_vectors)
-np.save('w2v_vectors.npy', doc_vectors)
-print(f"Document vectors saved: {doc_vectors.shape}")
-
-# Print model statistics
-print(f"\nModel Statistics:")
-print(f"Vocabulary size: {len(model.wv.key_to_index):,}")
-print(f"Vector size: {model.wv.vector_size}")
-print(f"Training epochs: {model.epochs}")
-
-# Test similarity
-try:
-    similar_words = model.wv.most_similar('الله', topn=10)
-    print(f"\nMost similar to 'الله': {similar_words}")
-except:
-    print("\n'الله' not found in vocabulary")
-```
-
-#### C. Alternative: Using Pre-trained Arabic Word2Vec
-```python
-# If you prefer using pre-trained Arabic Word2Vec models
-import gensim.downloader as api
-
-# Download pre-trained Arabic Word2Vec (if available)
-# model = api.load('word2vec-arabic-wiki')  # Example name
-
-# Or use AraVec models (you need to download separately)
-# from gensim.models import KeyedVectors
-# model = KeyedVectors.load_word2vec_format('path/to/aravec/model.txt')
-```
-
-### 4. Data Processing Scripts
-
-#### A. Enhanced Text Preprocessing (preprocessing.py)
-```python
-import re
-import string
-from typing import List, Optional
-
-class ArabicTextProcessor:
-    """Enhanced Arabic text processing utilities"""
-    
-    def __init__(self):
-        # Arabic diacritics pattern
-        self.tashkeel_pattern = re.compile(r'[\u064B-\u065F\u0670]')
-        
-        # Arabic punctuation
-        self.arabic_punctuation = '،؛؟!'
-        
-        # Stop words (basic list - you can expand this)
-        self.stop_words = {
-            'في', 'من', 'إلى', 'على', 'عن', 'مع', 'كل', 'بعض', 
-            'هذا', 'هذه', 'ذلك', 'تلك', 'التي', 'الذي', 'التي',
-            'وقد', 'فقد', 'كان', 'كانت', 'يكون', 'تكون', 'كما'
+@st.cache_data
+def load_sample_data():
+    """Create sample Quranic data for demonstration"""
+    sample_verses = [
+        {
+            'text': 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+            'surah': 'الفاتحة',
+            'ayah_number': 1,
+            'tafseer': 'بسم الله الرحمن الرحيم: استعانة بالله في بداية كل عمل'
+        },
+        {
+            'text': 'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ',
+            'surah': 'الفاتحة', 
+            'ayah_number': 2,
+            'tafseer': 'الحمد لله: الثناء على الله بجميع محامده'
+        },
+        {
+            'text': 'الرَّحْمَٰنِ الرَّحِيمِ',
+            'surah': 'الفاتحة',
+            'ayah_number': 3,
+            'tafseer': 'الرحمن الرحيم: صفتان من صفات الله تدلان على سعة رحمته'
+        },
+        {
+            'text': 'مَالِكِ يَوْمِ الدِّينِ',
+            'surah': 'الفاتحة',
+            'ayah_number': 4,
+            'tafseer': 'مالك يوم الدين: الله المالك المتصرف يوم الجزاء'
+        },
+        {
+            'text': 'إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ',
+            'surah': 'الفاتحة',
+            'ayah_number': 5,
+            'tafseer': 'إياك نعبد وإياك نستعين: توحيد الله في العبادة والاستعانة'
+        },
+        {
+            'text': 'قُلْ هُوَ اللَّهُ أَحَدٌ',
+            'surah': 'الإخلاص',
+            'ayah_number': 1,
+            'tafseer': 'قل هو الله أحد: إعلان توحيد الله وأنه واحد لا شريك له'
+        },
+        {
+            'text': 'اللَّهُ الصَّمَدُ',
+            'surah': 'الإخلاص',
+            'ayah_number': 2,
+            'tafseer': 'الله الصمد: الله الذي يصمد إليه في الحوائج'
+        },
+        {
+            'text': 'وَاللَّيْلِ إِذَا يَغْشَىٰ',
+            'surah': 'الليل',
+            'ayah_number': 1,
+            'tafseer': 'والليل إذا يغشى: قسم بالليل عندما يغطي الأرض'
+        },
+        {
+            'text': 'وَالنَّهَارِ إِذَا تَجَلَّىٰ',
+            'surah': 'الليل',
+            'ayah_number': 2,
+            'tafseer': 'والنهار إذا تجلى: قسم بالنهار عندما يظهر ويضيء'
+        },
+        {
+            'text': 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ',
+            'surah': 'البقرة',
+            'ayah_number': 201,
+            'tafseer': 'دعاء جامع للخير في الدنيا والآخرة والاستعاذة من النار'
         }
+    ]
     
-    def remove_diacritics(self, text: str) -> str:
-        """Remove Arabic diacritics"""
-        return self.tashkeel_pattern.sub('', text)
-    
-    def normalize_arabic(self, text: str) -> str:
-        """Normalize Arabic characters"""
-        # Normalize Alef variations
-        text = re.sub(r'[إأآا]', 'ا', text)
-        # Normalize Teh Marbuta
-        text = re.sub(r'ة', 'ه', text)
-        # Normalize Yeh variations
-        text = re.sub(r'[يئى]', 'ى', text)
-        return text
-    
-    def clean_text(self, text: str, remove_stopwords: bool = False) -> str:
-        """Complete text cleaning pipeline"""
-        if not isinstance(text, str):
-            return ""
-        
-        # Remove diacritics
-        text = self.remove_diacritics(text)
-        
-        # Normalize characters
-        text = self.normalize_arabic(text)
-        
-        # Remove non-Arabic characters except spaces
-        text = re.sub(r'[^\u0600-\u06FF\s]', ' ', text)
-        
-        # Remove extra whitespace
-        text = re.sub(r'\s+', ' ', text).strip()
-        
-        # Remove stop words if requested
-        if remove_stopwords:
-            words = text.split()
-            words = [word for word in words if word not in self.stop_words]
-            text = ' '.join(words)
-        
-        return text
-    
-    def tokenize(self, text: str) -> List[str]:
-        """Tokenize Arabic text"""
-        clean_text = self.clean_text(text)
-        return clean_text.split()
-    
-    def extract_roots(self, text: str) -> List[str]:
-        """Basic Arabic root extraction (simplified)"""
-        # This is a simplified version - for production use Arabic NLP libraries
-        words = self.tokenize(text)
-        roots = []
-        
-        for word in words:
-            if len(word) >= 3:
-                # Very basic root extraction - remove common prefixes/suffixes
-                root = word
-                # Remove common prefixes
-                for prefix in ['ال', 'و', 'ف', 'ب', 'ك', 'ل']:
-                    if root.startswith(prefix):
-                        root = root[len(prefix):]
-                        break
-                
-                # Remove common suffixes
-                for suffix in ['ها', 'ان', 'ين', 'ون', 'هم', 'كم']:
-                    if root.endswith(suffix):
-                        root = root[:-len(suffix)]
-                        break
-                
-                if len(root) >= 3:
-                    roots.append(root)
-        
-        return list(set(roots))  # Remove duplicates
+    df = pd.DataFrame(sample_verses)
+    df['clean_text'] = df['text'].apply(preprocess_arabic_text)
+    return df
 
-# Usage example
-processor = ArabicTextProcessor()
-sample_text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"
-clean_text = processor.clean_text(sample_text)
-print(f"Original: {sample_text}")
-print(f"Cleaned: {clean_text}")
-```
-
-### 5. Model Training Pipeline (train_models.py)
-```python
-#!/usr/bin/env python3
-"""
-Complete pipeline for training and saving all models
-"""
-
-import os
-import numpy as np
-import pandas as pd
-from datasets import load_dataset
-from sentence_transformers import SentenceTransformer
-from gensim.models import Word2Vec
-from sklearn.feature_extraction.text import TfidfVectorizer
-import joblib
-from preprocessing import ArabicTextProcessor
-
-def main():
-    print("🚀 Starting Quran Tafseer Model Training Pipeline")
+@st.cache_data
+def load_quran_data():
+    """Load Quran data with fallback to sample data"""
+    if not PACKAGES_STATUS['datasets']:
+        st.info("📱 استخدام البيانات التجريبية - ثبت مكتبة datasets للحصول على البيانات الكاملة")
+        return load_sample_data()
     
-    # Initialize text processor
-    processor = ArabicTextProcessor()
-    
-    # Load dataset
-    print("📖 Loading Quran-Tafseer dataset...")
-    dataset = load_dataset("MohamedRashad/Quran-Tafseer")
-    df = pd.DataFrame(dataset['train'])
-    print(f"✅ Loaded {len(df):,} records")
-    
-    # Prepare texts
-    print("🔧 Preprocessing texts...")
-    df['clean_text'] = df['text'].apply(processor.clean_text)
-    df['clean_tafseer'] = df['tafseer'].fillna('').apply(processor.clean_text)
-    
-    texts = df['clean_text'].tolist()
-    
-    # 1. Train BERT embeddings
-    print("\n🤖 Generating BERT embeddings...")
     try:
-        # Try Arabic BERT model first
-        bert_model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
-        bert_embeddings = bert_model.encode(texts, show_progress_bar=True, batch_size=16)
-        np.save('bert_vectors.npy', bert_embeddings)
-        print(f"✅ BERT vectors saved: {bert_embeddings.shape}")
+        with st.spinner("📖 جاري تحميل بيانات القرآن..."):
+            # Try to load from Hugging Face
+            dataset = load_dataset("MohamedRashad/Quran-Tafseer", split="train")
+            df = pd.DataFrame(dataset)
+            
+            # Handle different column names
+            if 'ayah' in df.columns and 'text' not in df.columns:
+                df['text'] = df['ayah']
+            elif 'verse' in df.columns and 'text' not in df.columns:
+                df['text'] = df['verse']
+            
+            # Ensure required columns
+            required_columns = ['text', 'surah', 'ayah_number']
+            for col in required_columns:
+                if col not in df.columns:
+                    if col == 'surah':
+                        df['surah'] = 'غير محدد'
+                    elif col == 'ayah_number':
+                        df['ayah_number'] = range(1, len(df) + 1)
+            
+            # Add tafseer if not present
+            if 'tafseer' not in df.columns:
+                df['tafseer'] = ''
+            
+            df['clean_text'] = df['text'].apply(preprocess_arabic_text)
+            
+            # Limit dataset size for demo (remove for production)
+            if len(df) > 1000:
+                df = df.head(1000)  # Limit to first 1000 verses for demo
+            
+            st.success(f"✅ تم تحميل {len(df)} آية")
+            return df
+            
     except Exception as e:
-        print(f"❌ BERT training failed: {e}")
+        st.warning(f"⚠️ خطأ في تحميل البيانات: {e}")
+        st.info("🔄 استخدام البيانات التجريبية...")
+        return load_sample_data()
+
+def simple_search(query, df, max_results=10):
+    """Simple text search without ML dependencies"""
+    if not query or df.empty:
+        return pd.DataFrame(), []
     
-    # 2. Train Word2Vec model
-    print("\n🧠 Training Word2Vec model...")
-    try:
-        # Prepare corpus
-        corpus = []
-        for text in texts:
-            if text.strip():
-                corpus.append(text.split())
-        
-        # Add tafseer texts
-        for text in df['clean_tafseer']:
-            if text.strip():
-                corpus.append(text.split())
-        
-        # Train model
-        w2v_model = Word2Vec(
-            sentences=corpus,
-            vector_size=300,
-            window=10,
-            min_count=2,
-            workers=4,
-            epochs=100,
-            sg=1,
-            seed=42
-        )
-        
-        # Save model
-        w2v_model.save('word2vec.model')
-        
-        # Generate document vectors
-        doc_vectors = []
-        for text in texts:
-            words = text.split()
-            valid_words = [w for w in words if w in w2v_model.wv]
-            if valid_words:
-                word_vecs = [w2v_model.wv[w] for w in valid_words]
-                doc_vec = np.mean(word_vecs, axis=0)
-            else:
-                doc_vec = np.zeros(300)
-            doc_vectors.append(doc_vec)
-        
-        doc_vectors = np.array(doc_vectors)
-        np.save('w2v_vectors.npy', doc_vectors)
-        
-        print(f"✅ Word2Vec model saved")
-        print(f"✅ Document vectors saved: {doc_vectors.shape}")
-        print(f"📊 Vocabulary size: {len(w2v_model.wv.key_to_index):,}")
-        
-    except Exception as e:
-        print(f"❌ Word2Vec training failed: {e}")
+    query_clean = preprocess_arabic_text(query).lower()
+    query_words = set(query_clean.split())
     
-    # 3. Train TF-IDF vectorizer (as backup)
-    print("\n📊 Training TF-IDF vectorizer...")
+    if not query_words:
+        return pd.DataFrame(), []
+    
+    scores = []
+    for _, row in df.iterrows():
+        text_clean = preprocess_arabic_text(str(row['text'])).lower()
+        text_words = set(text_clean.split())
+        
+        # Calculate Jaccard similarity
+        intersection = len(query_words & text_words)
+        union = len(query_words | text_words)
+        
+        if union > 0:
+            score = intersection / union
+        else:
+            score = 0
+        
+        scores.append(score)
+    
+    # Get top results
+    df_with_scores = df.copy()
+    df_with_scores['score'] = scores
+    
+    # Filter and sort
+    results = df_with_scores[df_with_scores['score'] > 0].nlargest(max_results, 'score')
+    
+    return results.drop('score', axis=1), results['score'].tolist()
+
+def tfidf_search(query, df, max_results=10):
+    """TF-IDF search if sklearn is available"""
+    if not PACKAGES_STATUS['sklearn']:
+        return simple_search(query, df, max_results)
+    
     try:
-        tfidf = TfidfVectorizer(
-            max_features=10000,
-            ngram_range=(1, 3),
-            min_df=2,
+        texts = [preprocess_arabic_text(query)] + df['clean_text'].tolist()
+        
+        vectorizer = TfidfVectorizer(
+            max_features=1000,
+            ngram_range=(1, 2),
+            min_df=1,
             max_df=0.95
         )
-        tfidf.fit(texts)
-        joblib.dump(tfidf, 'tfidf_vectorizer.pkl')
-        print("✅ TF-IDF vectorizer saved")
+        
+        tfidf_matrix = vectorizer.fit_transform(texts)
+        query_vector = tfidf_matrix[0]
+        doc_vectors = tfidf_matrix[1:]
+        
+        similarities = cosine_similarity(query_vector, doc_vectors).flatten()
+        
+        # Get top results
+        top_indices = similarities.argsort()[-max_results:][::-1]
+        top_scores = similarities[top_indices]
+        
+        # Filter by minimum similarity
+        valid_mask = top_scores > 0.01
+        if not valid_mask.any():
+            return pd.DataFrame(), []
+        
+        top_indices = top_indices[valid_mask]
+        top_scores = top_scores[valid_mask]
+        
+        return df.iloc[top_indices], top_scores.tolist()
+        
     except Exception as e:
-        print(f"❌ TF-IDF training failed: {e}")
+        st.warning(f"TF-IDF search failed: {e}")
+        return simple_search(query, df, max_results)
+
+def display_verse_card(verse_data, score=None):
+    """Display a verse in a nice card format"""
+    with st.container():
+        st.markdown('<div class="verse-card">', unsafe_allow_html=True)
+        
+        # Header with surah info and score
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            st.markdown(f"**📖 سورة {verse_data['surah']} - آية {verse_data['ayah_number']}**")
+        
+        with col2:
+            if score is not None:
+                percentage = int(score * 100)
+                st.markdown(f"🎯 **{percentage}%**")
+        
+        # Arabic text
+        st.markdown(f'<div class="arabic-text">{verse_data["text"]}</div>', 
+                   unsafe_allow_html=True)
+        
+        # Tafseer if available
+        if verse_data.get('tafseer') and verse_data['tafseer'].strip():
+            st.markdown("**📚 التفسير:**")
+            st.markdown(f"*{verse_data['tafseer']}*")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+
+def show_package_status():
+    """Show status of available packages"""
+    st.markdown("### 📦 حالة المكتبات")
     
-    print("\n🎉 Model training pipeline completed!")
-    print("\nGenerated files:")
-    files = ['bert_vectors.npy', 'w2v_vectors.npy', 'word2vec.model', 'tfidf_vectorizer.pkl']
-    for file in files:
-        if os.path.exists(file):
-            size = os.path.getsize(file) / (1024*1024)  # MB
-            print(f"✅ {file} ({size:.1f} MB)")
-        else:
-            print(f"❌ {file} (not created)")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        status = "active" if PACKAGES_STATUS['datasets'] else "inactive"
+        icon = "✅" if PACKAGES_STATUS['datasets'] else "❌"
+        st.markdown(f'<span class="status-badge status-{status}">{icon} Datasets</span>', 
+                   unsafe_allow_html=True)
+    
+    with col2:
+        status = "active" if PACKAGES_STATUS['sklearn'] else "inactive"
+        icon = "✅" if PACKAGES_STATUS['sklearn'] else "❌"
+        st.markdown(f'<span class="status-badge status-{status}">{icon} Scikit-learn</span>', 
+                   unsafe_allow_html=True)
+    
+    with col3:
+        status = "active" if PACKAGES_STATUS['joblib'] else "inactive"
+        icon = "✅" if PACKAGES_STATUS['joblib'] else "❌"
+        st.markdown(f'<span class="status-badge status-{status}">{icon} Joblib</span>', 
+                   unsafe_allow_html=True)
+
+def main():
+    # Header
+    st.markdown("""
+    <div class="main-header">
+        <h1>📖 تفسير القرآن الذكي</h1>
+        <p>Smart Quran Tafseer - Cloud Version</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Load data
+    df = load_quran_data()
+    
+    if df.empty:
+        st.error("❌ لا يمكن تحميل البيانات")
+        st.stop()
+    
+    # Show package status
+    show_package_status()
+    
+    # Search interface
+    st.markdown("### 🔍 البحث في القرآن الكريم")
+    
+    col1, col2 = st.columns([4, 1])
+    
+    with col1:
+        search_query = st.text_input(
+            "",
+            placeholder="ابحث في القرآن... مثال: الرحمة، الصبر، الجنة",
+            label_visibility="collapsed"
+        )
+    
+    with col2:
+        search_method = st.selectbox(
+            "طريقة البحث",
+            ["ذكي" if PACKAGES_STATUS['sklearn'] else "نصي بسيط", "نصي بسيط"]
+        )
+    
+    # Advanced options
+    with st.expander("⚙️ خيارات متقدمة"):
+        max_results = st.slider("عدد النتائج", 5, 50, 10)
+        search_in_tafseer = st.checkbox("البحث في التفسير أيضاً", value=True)
+    
+    # Perform search
+    if search_query:
+        with st.spinner("🔍 جاري البحث..."):
+            # Prepare search dataframe
+            search_df = df.copy()
+            if search_in_tafseer:
+                # Combine text and tafseer for search
+                search_df['combined_text'] = (
+                    search_df['clean_text'].fillna('') + ' ' + 
+                    search_df['tafseer'].fillna('').apply(preprocess_arabic_text)
+                )
+                search_df['clean_text'] = search_df['combined_text']
+            
+            # Execute search
+            if search_method == "ذكي" and PACKAGES_STATUS['sklearn']:
+                results_df, scores = tfidf_search(search_query, search_df, max_results)
+                search_type = "TF-IDF ذكي"
+            else:
+                results_df, scores = simple_search(search_query, search_df, max_results)
+                search_type = "نصي بسيط"
+            
+            # Display results
+            if not results_df.empty:
+                st.success(f"🎯 تم العثور على {len(results_df)} نتيجة باستخدام البحث {search_type}")
+                
+                # Show average score
+                if scores:
+                    avg_score = np.mean(scores) * 100
+                    st.info(f"📊 متوسط الدقة: {avg_score:.1f}%")
+                
+                # Display verses
+                for idx, (_, verse) in enumerate(results_df.iterrows()):
+                    score = scores[idx] if idx < len(scores) else None
+                    display_verse_card(verse, score)
+                    
+            else:
+                st.warning("❌ لم يتم العثور على نتائج. جرب كلمات مختلفة.")
+    
+    # Quick suggestions
+    if not search_query:
+        st.markdown("### 🚀 اقتراحات البحث")
+        
+        suggestions = ["الرحمة", "الصبر", "الجنة", "التوبة", "الدعاء", "العدل"]
+        
+        cols = st.columns(3)
+        for i, suggestion in enumerate(suggestions):
+            with cols[i % 3]:
+                if st.button(f"🔍 {suggestion}", key=f"suggestion_{i}"):
+                    st.session_state.search_query = suggestion
+                    st.experimental_rerun()
+    
+    # Statistics
+    st.markdown("### 📊 إحصائيات")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("إجمالي الآيات", len(df))
+    
+    with col2:
+        unique_surahs = len(df['surah'].unique())
+        st.metric("عدد السور", unique_surahs)
+    
+    with col3:
+        avg_length = df['text'].str.len().mean()
+        st.metric("متوسط طول الآية", f"{avg_length:.0f} حرف")
+    
+    # Footer
+    st.markdown("---")
+    st.markdown("""
+    <div style="text-align: center; color: #666; padding: 1rem;">
+        <p>📖 <strong>تفسير القرآن الذكي</strong> - نسخة مبسطة للسحابة</p>
+        <p style="font-size: 0.9rem;">للاستفادة من جميع الميزات، قم بتشغيل التطبيق محلياً</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
-```
-
-### 6. Running the Application
-
-#### A. Quick Start
-```bash
-# After installing requirements and generating models
-streamlit run app.py
-```
-
-#### B. With Custom Configuration
-```bash
-# Set environment variables for better performance
-export STREAMLIT_SERVER_MAX_UPLOAD_SIZE=200
-export STREAMLIT_SERVER_ENABLE_CORS=false
-
-# Run with specific port
-streamlit run app.py --server.port 8501
-```
-
-#### C. Production Deployment
-```bash
-# For production deployment
-streamlit run app.py --server.address 0.0.0.0 --server.port 8501
-```
-
-### 7. Troubleshooting
-
-#### Common Issues:
-
-1. **Large Model Files**
-   - BERT vectors can be 100+ MB
-   - Word2Vec models can be 50+ MB
-   - Use Git LFS for version control
-
-2. **Memory Issues**
-   - Reduce batch_size in BERT encoding
-   - Use smaller vector_size in Word2Vec
-   - Implement lazy loading for large models
-
-3. **Arabic Text Issues**
-   - Ensure UTF-8 encoding
-   - Install Arabic fonts for proper display
-   - Use proper RTL text direction
-
-4. **Performance Optimization**
-   - Cache models in session_state
-   - Use @st.cache_data for expensive operations
-   - Implement pagination for large result sets
-
-### 8. Model Performance Tuning
-
-#### BERT Optimization:
-```python
-# Use smaller models for faster inference
-model_names = [
-    'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',  # Fast
-    'sentence-transformers/paraphrase-multilingual-mpnet-base-v2',  # Balanced
-    'aubmindlab/bert-base-arabertv02'  # Arabic-specific
-]
-```
-
-#### Word2Vec Optimization:
-```python
-# Experiment with different parameters
-Word2Vec(
-    vector_size=200,     # Smaller for speed
-    window=5,            # Smaller context
-    min_count=3,         # Higher threshold
-    epochs=50,           # Fewer epochs
-    workers=8            # More workers if available
-)
-```
-
-### 9. Data Sources and Licenses
-
-- **Dataset**: MohamedRashad/Quran-Tafseer (Hugging Face)
-- **Models**: Various open-source pre-trained models
-- **License**: Ensure compliance with dataset and model licenses
-
-### 10. Future Enhancements
-
-- Add more Arabic NLP models (AraBERT, AraGPT)
-- Implement semantic search with Elasticsearch
-- Add voice search capabilities
-- Multi-language support (translations)
-- Advanced Arabic morphological analysis
-- Integration with Islamic knowledge bases
