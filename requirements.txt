@@ -16,3 +16,67 @@ arabic-reshaper>=3.0.0
 python-bidi>=0.4.0
 torch>=2.0.0
 huggingface-hub>=0.16.0
+
+## 🚀 Setup Instructions
+
+### 1. Installation
+```bash
+# Clone or download the project
+git clone <your-repo> 
+cd quran-tafseer-app
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# or
+venv\Scripts\activate  # Windows
+
+# Install requirements
+pip install -r requirements.txt
+```
+
+### 2. Model Files Structure
+```
+quran-tafseer-app/
+├── app.py                 # Main application file
+├── requirements.txt       # Dependencies
+├── bert_vectors.npy      # BERT embeddings (required)
+├── w2v_vectors.npy       # Word2Vec document vectors (required)
+├── word2vec.model        # Trained Word2Vec model (required)
+├── README.md             # Documentation
+└── models/               # Optional: model folder
+    ├── preprocessing/    # Text preprocessing scripts
+    └── training/         # Model training scripts
+```
+
+### 3. Generating Model Files
+
+#### A. BERT Vectors (bert_vectors.npy)
+```python
+# Script to generate BERT vectors
+from datasets import load_dataset
+from sentence_transformers import SentenceTransformer
+import numpy as np
+import pandas as pd
+
+# Load dataset
+dataset = load_dataset("MohamedRashad/Quran-Tafseer")
+df = pd.DataFrame(dataset['train'])
+
+# Load pre-trained Arabic BERT model
+model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
+# Or use: 'aubmindlab/bert-base-arabertv02'
+
+# Prepare texts
+texts = df['text'].fillna('').tolist()  # or df['ayah'] depending on column name
+
+# Generate embeddings
+print("Generating BERT embeddings...")
+embeddings = model.encode(texts, show_progress_bar=True, batch_size=32)
+
+# Save vectors
+np.save('bert_vectors.npy', embeddings)
+print(f"BERT vectors saved: {embeddings.shape}")
+```
+
+#### B. Word2Vec
