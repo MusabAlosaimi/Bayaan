@@ -346,37 +346,104 @@ def preprocess_arabic_text(text):
     
     return text
 
+def load_local_fallback():
+    """Fallback to create sample data if Hugging Face is not available"""
+    try:
+        # Try to load old CSV file if it exists
+        if os.path.exists('adhkar_df.csv'):
+            df = pd.read_csv('adhkar_df.csv')
+            # Convert to Quran format
+            if 'text' not in df.columns and 'ayah' in df.columns:
+                df['text'] = df['ayah']
+            df['clean_text'] = df['text'].apply(preprocess_arabic_text)
+            return df
+    except:
+        pass
+    
+    # Create sample data for demonstration
+    sample_data = {
+        'text': [
+            'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+            'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ',
+            'الرَّحْمَٰنِ الرَّحِيمِ',
+            'مَالِكِ يَوْمِ الدِّينِ',
+            'إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ',
+            'اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ',
+            'صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ'
+        ],
+        'surah': ['الفاتحة'] * 7,
+        'ayah_number': list(range(1, 8)),
+        'tafseer': [
+            'بسم الله الرحمن الرحيم: افتتاح كل سورة بحمد الله والثناء عليه',
+            'الحمد لله: الثناء على الله بصفاته الجميلة وأفعاله الحميدة',
+            'الرحمن الرحيم: من أسماء الله الحسنى التي تدل على سعة رحمته',
+            'مالك يوم الدين: الله هو المالك المتصرف يوم القيامة',
+            'إياك نعبد: التوحيد في العبادة والاستعانة',
+            'اهدنا الصراط المستقيم: دعاء بالهداية إلى الطريق المستقيم',
+            'صراط الذين أنعمت عليهم: طريق الأنبياء والصالحين'
+        ]
+    }
+    
+    df = pd.DataFrame(sample_data)
+    df['clean_text'] = df['text'].apply(preprocess_arabic_text)
+    df['clean_tafseer'] = df['tafseer'].apply(preprocess_arabic_text)
+    
+    st.warning("⚠️ يتم استخدام بيانات تجريبية. لتحميل البيانات الكاملة، ثبت مكتبة datasets")
+    return df
+
 @st.cache_data
 def load_quran_dataset():
     """Load and cache the Quran Tafseer dataset"""
+    if not DATASETS_AVAILABLE:
+        st.warning("⚠️ مكتبة datasets غير مثبتة. للتثبيت: pip install datasets")
+        return load_local_fallback()
+    
     try:
-        if not DATASETS_AVAILABLE:
-            st.error("❌ مكتبة datasets غير مثبتة. للتثبيت: pip install datasets")
-            return pd.DataFrame()
-        
         with st.spinner("📖 جاري تحميل بيانات القرآن والتفسير..."):
             dataset = load_dataset("MohamedRashad/Quran-Tafseer")
             
             # Convert to pandas DataFrame
             df = pd.DataFrame(dataset['train'])
             
-            # Add preprocessing
-            if 'text' in df.columns:
-                df['clean_text'] = df['text'].apply(preprocess_arabic_text)
-            elif 'ayah' in df.columns:
+            # Handle different column names that might exist
+            if 'ayah' in df.columns and 'text' not in df.columns:
                 df['text'] = df['ayah']
-                df['clean_text'] = df['ayah'].apply(preprocess_arabic_text)
+            elif 'verse' in df.columns and 'text' not in df.columns:
+                df['text'] = df['verse']
+            
+            # Ensure we have required columns
+            if 'text' not in df.columns:
+                st.error("❌ البيانات المحملة لا تحتوي على نص الآيات")
+                return load_local_fallback()
+            
+            # Add preprocessing
+            df['clean_text'] = df['text'].fillna('').apply(preprocess_arabic_text)
             
             # Add tafseer preprocessing if available
             if 'tafseer' in df.columns:
-                df['clean_tafseer'] = df['tafseer'].apply(preprocess_arabic_text)
+                df['clean_tafseer'] = df['tafseer'].fillna('').apply(preprocess_arabic_text)
+            else:
+                df['tafseer'] = ''
+                df['clean_tafseer'] = ''
             
-            st.success(f"✅ تم تحميل {len(df):,} آية وتفسير")
-            return df.dropna()
+            # Ensure surah and ayah_number columns exist
+            if 'surah' not in df.columns:
+                df['surah'] = 'غير محدد'
+            if 'ayah_number' not in df.columns and 'verse_number' in df.columns:
+                df['ayah_number'] = df['verse_number']
+            elif 'ayah_number' not in df.columns:
+                df['ayah_number'] = range(1, len(df) + 1)
+            
+            # Remove rows with empty text
+            df = df[df['text'].str.strip() != ''].dropna(subset=['text'])
+            
+            st.success(f"✅ تم تحميل {len(df):,} آية وتفسير من Hugging Face")
+            return df
             
     except Exception as e:
-        st.error(f"❌ خطأ في تحميل البيانات: {e}")
-        return pd.DataFrame()
+        st.error(f"❌ خطأ في تحميل البيانات من Hugging Face: {e}")
+        st.info("🔄 جاري المحاولة باستخدام البيانات المحلية...")
+        return load_local_fallback()
 
 @st.cache_data
 def load_models():
@@ -385,61 +452,112 @@ def load_models():
         'bert_available': False,
         'w2v_available': False,
         'word2vec_available': False,
+        'tfidf_available': False,
         'bert_vectors': None,
         'w2v_vectors': None,
-        'word2vec_model': None
+        'word2vec_model': None,
+        'tfidf_vectorizer': None
     }
+    
+    # Check if we're running the app for the first time
+    first_run = True
     
     try:
         # Load BERT vectors
-        if st.session_state.get('bert_vectors') is None:
-            bert_vectors = np.load('bert_vectors.npy')
-            models['bert_vectors'] = bert_vectors
-            models['bert_available'] = True
-            st.session_state.bert_vectors = bert_vectors
+        if os.path.exists('bert_vectors.npy'):
+            if st.session_state.get('bert_vectors') is None:
+                bert_vectors = np.load('bert_vectors.npy')
+                models['bert_vectors'] = bert_vectors
+                models['bert_available'] = True
+                st.session_state.bert_vectors = bert_vectors
+                st.success("✅ تم تحميل نموذج BERT")
+            else:
+                models['bert_vectors'] = st.session_state.bert_vectors
+                models['bert_available'] = True
         else:
-            models['bert_vectors'] = st.session_state.bert_vectors
-            models['bert_available'] = True
+            if first_run:
+                st.warning("⚠️ ملف bert_vectors.npy غير موجود - ميزات BERT معطلة")
             
-    except FileNotFoundError:
-        st.warning("⚠️ ملف bert_vectors.npy غير موجود")
     except Exception as e:
         st.error(f"❌ خطأ في تحميل BERT: {e}")
     
     try:
         # Load Word2Vec vectors
-        if st.session_state.get('w2v_vectors') is None:
-            w2v_vectors = np.load('w2v_vectors.npy')
-            models['w2v_vectors'] = w2v_vectors
-            models['w2v_available'] = True
-            st.session_state.w2v_vectors = w2v_vectors
+        if os.path.exists('w2v_vectors.npy'):
+            if st.session_state.get('w2v_vectors') is None:
+                w2v_vectors = np.load('w2v_vectors.npy')
+                models['w2v_vectors'] = w2v_vectors
+                models['w2v_available'] = True
+                st.session_state.w2v_vectors = w2v_vectors
+                st.success("✅ تم تحميل متجهات Word2Vec")
+            else:
+                models['w2v_vectors'] = st.session_state.w2v_vectors
+                models['w2v_available'] = True
         else:
-            models['w2v_vectors'] = st.session_state.w2v_vectors
-            models['w2v_available'] = True
+            if first_run:
+                st.warning("⚠️ ملف w2v_vectors.npy غير موجود - ميزات Word2Vec معطلة")
             
-    except FileNotFoundError:
-        st.warning("⚠️ ملف w2v_vectors.npy غير موجود")
     except Exception as e:
         st.error(f"❌ خطأ في تحميل Word2Vec vectors: {e}")
     
     try:
         # Load Word2Vec model
         if not GENSIM_AVAILABLE:
-            st.warning("⚠️ مكتبة gensim غير مثبتة")
-        else:
+            if first_run:
+                st.warning("⚠️ مكتبة gensim غير مثبتة. للتثبيت: pip install gensim")
+        elif os.path.exists('word2vec.model'):
             if st.session_state.get('word2vec_model') is None:
                 word2vec_model = Word2Vec.load('word2vec.model')
                 models['word2vec_model'] = word2vec_model
                 models['word2vec_available'] = True
                 st.session_state.word2vec_model = word2vec_model
+                st.success("✅ تم تحميل نموذج Word2Vec")
             else:
                 models['word2vec_model'] = st.session_state.word2vec_model
                 models['word2vec_available'] = True
+        else:
+            if first_run:
+                st.warning("⚠️ ملف word2vec.model غير موجود - ميزات Word2Vec متقدمة معطلة")
                 
-    except FileNotFoundError:
-        st.warning("⚠️ ملف word2vec.model غير موجود")
     except Exception as e:
         st.error(f"❌ خطأ في تحميل Word2Vec model: {e}")
+    
+    try:
+        # Load or create TF-IDF vectorizer
+        if SKLEARN_AVAILABLE:
+            if os.path.exists('tfidf_vectorizer.pkl'):
+                if JOBLIB_AVAILABLE:
+                    tfidf_vectorizer = joblib.load('tfidf_vectorizer.pkl')
+                else:
+                    with open('tfidf_vectorizer.pkl', 'rb') as f:
+                        tfidf_vectorizer = pickle.load(f)
+                models['tfidf_vectorizer'] = tfidf_vectorizer
+                models['tfidf_available'] = True
+                st.success("✅ تم تحميل نموذج TF-IDF")
+            else:
+                # Create a new TF-IDF vectorizer
+                models['tfidf_available'] = True
+                if first_run:
+                    st.info("ℹ️ سيتم إنشاء نموذج TF-IDF جديد عند الحاجة")
+        else:
+            if first_run:
+                st.warning("⚠️ مكتبة scikit-learn غير مثبتة - ميزات البحث الذكي محدودة")
+    
+    except Exception as e:
+        st.error(f"❌ خطأ في تحميل TF-IDF: {e}")
+    
+    # Show summary of available models
+    available_count = sum([
+        models['bert_available'],
+        models['w2v_available'], 
+        models['word2vec_available'],
+        models['tfidf_available']
+    ])
+    
+    if available_count == 0:
+        st.warning("⚠️ لا توجد نماذج ذكية متاحة - سيتم استخدام البحث التقليدي فقط")
+    else:
+        st.info(f"ℹ️ متاح {available_count} من 4 نماذج ذكية")
     
     return models
 
@@ -553,7 +671,7 @@ def hybrid_search(query, df, models, search_weights=None, top_k=10):
                 all_results.append((row, score, 'BERT'))
         
         # Word2Vec search
-        if models['w2v_available']:
+        if models['w2v_available'] and models['word2vec_available']:
             w2v_results, w2v_similarities = word2vec_similarity_search(
                 query, df, models['w2v_vectors'], models['word2vec_model'], top_k=top_k*2
             )
@@ -561,12 +679,21 @@ def hybrid_search(query, df, models, search_weights=None, top_k=10):
                 score = w2v_similarities[idx] * search_weights['w2v']
                 all_results.append((row, score, 'Word2Vec'))
         
-        # TF-IDF fallback
-        if SKLEARN_AVAILABLE:
-            tfidf_results, tfidf_similarities = tfidf_search(query, df, top_k=top_k)
+        # TF-IDF search
+        if models['tfidf_available']:
+            tfidf_results, tfidf_similarities = tfidf_search(
+                query, df, top_k=top_k, vectorizer=models.get('tfidf_vectorizer')
+            )
             for idx, (_, row) in enumerate(tfidf_results.iterrows()):
                 score = tfidf_similarities[idx] * search_weights['tfidf']
                 all_results.append((row, score, 'TF-IDF'))
+        
+        # If no advanced models available, use simple text search
+        if not all_results:
+            simple_results, simple_similarities = simple_text_search(query, df, top_k=top_k)
+            for idx, (_, row) in enumerate(simple_results.iterrows()):
+                score = simple_similarities[idx]
+                all_results.append((row, score, 'نصي بسيط'))
         
         if not all_results:
             return pd.DataFrame(), [], []
@@ -575,16 +702,16 @@ def hybrid_search(query, df, models, search_weights=None, top_k=10):
         unique_results = {}
         for row, score, model_type in all_results:
             # Use a key based on the text content
-            key = row.get('text', row.get('ayah', ''))[:100]
-            if key in unique_results:
+            text_key = str(row.get('text', row.get('ayah', '')))[:100]
+            if text_key in unique_results:
                 # Combine scores from different models
-                unique_results[key] = (
+                unique_results[text_key] = (
                     row,
-                    unique_results[key][1] + score,
-                    unique_results[key][2] + [model_type]
+                    unique_results[text_key][1] + score,
+                    unique_results[text_key][2] + [model_type]
                 )
             else:
-                unique_results[key] = (row, score, [model_type])
+                unique_results[text_key] = (row, score, [model_type])
         
         # Sort by combined score
         sorted_results = sorted(unique_results.values(), key=lambda x: x[1], reverse=True)
@@ -602,33 +729,85 @@ def hybrid_search(query, df, models, search_weights=None, top_k=10):
     except Exception as e:
         st.error(f"❌ خطأ في البحث المختلط: {e}")
         return pd.DataFrame(), [], []
+        scores = np.array(scores)
+        top_indices = scores.argsort()[-top_k:][::-1]
+        top_scores = scores[top_indices]
+        
+        # Filter by minimum score
+        valid_mask = top_scores > 0
+        if not np.any(valid_mask):
+            return pd.DataFrame(), []
+        
+        top_indices = top_indices[valid_mask]
+        top_scores = top_scores[valid_mask]
+        
+        result_df = df.iloc[top_indices].copy()
+        return result_df, top_scores.tolist()
+        
+    except Exception as e:
+        st.error(f"❌ خطأ في البحث النصي: {e}")
+        return pd.DataFrame(), []
 
-def tfidf_search(query, df, top_k=10):
-    """Enhanced TF-IDF search as fallback"""
+# Add missing import
+import os
+
+def tfidf_search(query, df, top_k=10, vectorizer=None):
+    """Enhanced TF-IDF search with dynamic vectorizer creation"""
     try:
         if not SKLEARN_AVAILABLE:
             return pd.DataFrame(), []
         
         clean_query = preprocess_arabic_text(query)
-        corpus = [clean_query] + df['clean_text'].tolist()
+        if not clean_query.strip():
+            return pd.DataFrame(), []
         
-        vectorizer = TfidfVectorizer(
-            max_features=5000,
-            ngram_range=(1, 3),
-            min_df=1,
-            max_df=0.95
-        )
+        texts = df['clean_text'].fillna('').tolist()
+        if not texts or len(texts) == 0:
+            return pd.DataFrame(), []
         
-        tfidf_matrix = vectorizer.fit_transform(corpus)
-        query_vector = tfidf_matrix[0]
-        document_vectors = tfidf_matrix[1:]
+        # Use provided vectorizer or create new one
+        if vectorizer is None:
+            vectorizer = TfidfVectorizer(
+                max_features=5000,
+                ngram_range=(1, 3),
+                min_df=1,  # Lower min_df for small datasets
+                max_df=0.95
+            )
+            # Fit the vectorizer on the corpus
+            corpus = [clean_query] + texts
+            tfidf_matrix = vectorizer.fit_transform(corpus)
+            query_vector = tfidf_matrix[0]
+            document_vectors = tfidf_matrix[1:]
+        else:
+            # Use pre-fitted vectorizer
+            try:
+                query_vector = vectorizer.transform([clean_query])
+                document_vectors = vectorizer.transform(texts)
+            except:
+                # If transform fails, create new vectorizer
+                vectorizer = TfidfVectorizer(
+                    max_features=5000,
+                    ngram_range=(1, 3),
+                    min_df=1,
+                    max_df=0.95
+                )
+                corpus = [clean_query] + texts
+                tfidf_matrix = vectorizer.fit_transform(corpus)
+                query_vector = tfidf_matrix[0]
+                document_vectors = tfidf_matrix[1:]
         
+        # Calculate similarities
         similarities = cosine_similarity(query_vector, document_vectors).flatten()
+        
+        # Get top results
+        if len(similarities) == 0:
+            return pd.DataFrame(), []
         
         top_indices = similarities.argsort()[-top_k:][::-1]
         top_similarities = similarities[top_indices]
         
-        valid_mask = top_similarities > 0.05
+        # Filter by minimum similarity (lower threshold for small datasets)
+        valid_mask = top_similarities > 0.01
         if not np.any(valid_mask):
             return pd.DataFrame(), []
         
@@ -931,14 +1110,20 @@ def show_search_tab(df, models):
                     search_query, search_df, models['bert_vectors'], max_results
                 )
                 model_types = [['BERT']] * len(similarities)
-            elif st.session_state.search_mode == 'word2vec' and models['w2v_available']:
+            elif st.session_state.search_mode == 'word2vec' and models['w2v_available'] and models['word2vec_available']:
                 results_df, similarities = word2vec_similarity_search(
                     search_query, search_df, models['w2v_vectors'], models['word2vec_model'], max_results
                 )
                 model_types = [['Word2Vec']] * len(similarities)
-            elif st.session_state.search_mode == 'tfidf' and SKLEARN_AVAILABLE:
-                results_df, similarities = tfidf_search(search_query, search_df, max_results)
+            elif st.session_state.search_mode == 'tfidf' and models['tfidf_available']:
+                results_df, similarities = tfidf_search(
+                    search_query, search_df, max_results, models.get('tfidf_vectorizer')
+                )
                 model_types = [['TF-IDF']] * len(similarities)
+            else:
+                # Fallback to simple text search
+                results_df, similarities = simple_text_search(search_query, search_df, max_results)
+                model_types = [['بحث نصي']] * len(similarities)
             
             # Display results
             if not results_df.empty:
