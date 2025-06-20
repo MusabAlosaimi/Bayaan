@@ -485,3 +485,595 @@ def simple_text_search(query, df, top_k=10):
             
             if query_words:
                 overlap = len(query_words.intersection(text_words))
+                score = overlap / len(query_words)
+            else:
+                score = 0
+            
+            scores.append(score)
+        
+        scores = np.array(scores)
+        top_indices = scores.argsort()[-top_k:][::-1]
+        top_scores = scores[top_indices]
+        
+        # Filter by minimum score
+        valid_mask = top_scores > 0
+        if not np.any(valid_mask):
+            return pd.DataFrame(), []
+        
+        top_indices = top_indices[valid_mask]
+        top_scores = top_scores[valid_mask]
+        
+        result_df = df.iloc[top_indices].copy()
+        return result_df, top_scores.tolist()
+        
+    except Exception as e:
+        st.error(f"❌ خطأ في البحث النصي: {e}")
+        return pd.DataFrame(), []
+
+def tfidf_search(query, df, top_k=10, vectorizer=None):
+    """TF-IDF search with fallback to simple search"""
+    try:
+        if not SKLEARN_AVAILABLE:
+            return simple_text_search(query, df, top_k)
+        
+        clean_query = preprocess_arabic_text(query)
+        if not clean_query.strip():
+            return pd.DataFrame(), []
+        
+        texts = df['clean_text'].fillna('').tolist()
+        if not texts:
+            return pd.DataFrame(), []
+        
+        # Create TF-IDF vectorizer
+        vectorizer = TfidfVectorizer(
+            max_features=5000,
+            ngram_range=(1, 3),
+            min_df=1,
+            max_df=0.95
+        )
+        
+        # Fit on corpus including query
+        corpus = [clean_query] + texts
+        tfidf_matrix = vectorizer.fit_transform(corpus)
+        query_vector = tfidf_matrix[0]
+        document_vectors = tfidf_matrix[1:]
+        
+        # Calculate similarities
+        similarities = cosine_similarity(query_vector, document_vectors).flatten()
+        
+        # Get top results
+        top_indices = similarities.argsort()[-top_k:][::-1]
+        top_similarities = similarities[top_indices]
+        
+        # Filter by minimum similarity
+        valid_mask = top_similarities > 0.01
+        if not np.any(valid_mask):
+            return pd.DataFrame(), []
+        
+        top_indices = top_indices[valid_mask]
+        top_similarities = top_similarities[valid_mask]
+        
+        result_df = df.iloc[top_indices].copy()
+        return result_df, top_similarities.tolist()
+        
+    except Exception as e:
+        st.error(f"❌ خطأ في البحث بـ TF-IDF: {e}")
+        return simple_text_search(query, df, top_k)
+
+def display_ayah_card(row, similarity_score=None, model_types=None, card_id=None):
+    """Enhanced display for Quran ayah with tafseer"""
+    if card_id is None:
+        card_id = f"ayah_{hash(str(row.get('text', ''))[:50])}"
+    
+    with st.container():
+        st.markdown('<div class="premium-card">', unsafe_allow_html=True)
+        st.markdown('<div style="padding: 2rem;">', unsafe_allow_html=True)
+        
+        # Header with surah and ayah info
+        col1, col2, col3 = st.columns([2, 1, 1])
+        
+        with col1:
+            surah_name = row.get('surah', 'غير محدد')
+            ayah_number = row.get('ayah_number', '')
+            
+            st.markdown(f"""
+            <div class="surah-badge">
+                📖 سورة {surah_name}
+            </div>
+            <span class="ayah-number">{ayah_number}</span>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            if similarity_score is not None:
+                percentage = int(similarity_score * 100)
+                color = "var(--primary-500)" if percentage > 70 else "var(--accent-500)" if percentage > 40 else "var(--secondary-500)"
+                st.markdown(f"""
+                <div style="
+                    background: linear-gradient(135deg, {color}20, {color}10);
+                    color: {color};
+                    padding: 6px 12px;
+                    border-radius: var(--radius-3xl);
+                    text-align: center;
+                    font-weight: 600;
+                    border: 1px solid {color}30;
+                ">
+                    🎯 {percentage}%
+                </div>
+                """, unsafe_allow_html=True)
+        
+        with col3:
+            if model_types:
+                models_text = " + ".join(set(model_types)) if isinstance(model_types, list) else str(model_types)
+                st.markdown(f"""
+                <div style="
+                    background: var(--gray-100);
+                    color: var(--gray-700);
+                    padding: 6px 12px;
+                    border-radius: var(--radius-lg);
+                    text-align: center;
+                    font-size: 0.8rem;
+                    font-weight: 500;
+                ">
+                    {models_text}
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # Arabic text (Ayah)
+        ayah_text = row.get('text', '')
+        if ayah_text:
+            st.markdown(f"""
+            <div class="premium-arabic">
+                {ayah_text}
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Tafseer (if available)
+        tafseer_text = row.get('tafseer', '')
+        if tafseer_text and tafseer_text.strip() and tafseer_text != 'nan':
+            st.markdown("**📚 التفسير:**")
+            st.markdown(f"""
+            <div class="tafseer-text">
+                {tafseer_text}
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Action buttons
+        st.markdown("---")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            if st.button("📚 حفظ", key=f"save_{card_id}", use_container_width=True):
+                if 'saved_ayahs' not in st.session_state:
+                    st.session_state.saved_ayahs = []
+                st.session_state.saved_ayahs.append(ayah_text)
+                st.success("✅ تم حفظ الآية!")
+        
+        with col2:
+            if st.button("📋 نسخ الآية", key=f"copy_ayah_{card_id}", use_container_width=True):
+                st.code(ayah_text, language="text")
+                st.success("📋 يمكنك نسخ النص أعلاه!")
+        
+        with col3:
+            if tafseer_text and st.button("📝 نسخ التفسير", key=f"copy_tafseer_{card_id}", use_container_width=True):
+                st.code(tafseer_text, language="text")
+                st.success("📝 يمكنك نسخ التفسير أعلاه!")
+        
+        with col4:
+            if st.button("🔍 آيات مشابهة", key=f"similar_{card_id}", use_container_width=True):
+                st.session_state.find_similar_ayah = ayah_text
+                st.rerun()
+        
+        st.markdown('</div></div>', unsafe_allow_html=True)
+
+def initialize_session_state():
+    """Initialize session state"""
+    defaults = {
+        'search_mode': 'tfidf',
+        'saved_ayahs': [],
+        'reading_history': [],
+        'search_history': [],
+        'daily_verses_read': 0,
+        'total_verses_read': 0,
+        'last_search_date': datetime.now().date(),
+    }
+    
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+def show_model_status(models):
+    """Display current model status"""
+    st.markdown('<div class="model-status">', unsafe_allow_html=True)
+    
+    # TF-IDF Status
+    tfidf_class = "model-active" if models['tfidf_available'] else "model-inactive"
+    tfidf_icon = "📊" if models['tfidf_available'] else "❌"
+    st.markdown(f'''
+    <div class="model-badge {tfidf_class}">
+        <span>{tfidf_icon}</span>
+        <span>TF-IDF متاح</span>
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    # Simple Search Status
+    st.markdown(f'''
+    <div class="model-badge model-active">
+        <span>🔍</span>
+        <span>بحث نصي متاح</span>
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    # Future Models
+    st.markdown(f'''
+    <div class="model-badge model-inactive">
+        <span>🤖</span>
+        <span>BERT (قريباً)</span>
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    st.markdown(f'''
+    <div class="model-badge model-inactive">
+        <span>🧠</span>
+        <span>Word2Vec (قريباً)</span>
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def show_search_tab(df, models):
+    """Enhanced search tab"""
+    st.markdown("### 🔍 البحث الذكي في القرآن والتفسير")
+    
+    # Search mode selection
+    st.markdown("**🎯 اختر نوع البحث:**")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("📊 TF-IDF (ذكي)", 
+                    key="mode_tfidf", 
+                    use_container_width=True,
+                    disabled=not models['tfidf_available'],
+                    type="primary" if st.session_state.search_mode == 'tfidf' else "secondary"):
+            st.session_state.search_mode = 'tfidf'
+    
+    with col2:
+        if st.button("🔍 بحث نصي (بسيط)", 
+                    key="mode_simple", 
+                    use_container_width=True,
+                    type="primary" if st.session_state.search_mode == 'simple' else "secondary"):
+            st.session_state.search_mode = 'simple'
+    
+    # Search input
+    col_search, col_button = st.columns([4, 1])
+    
+    with col_search:
+        search_query = st.text_input(
+            "",
+            placeholder="ابحث في القرآن والتفسير... مثال: 'الصبر'، 'الرحمة'، 'الجنة'",
+            key="main_search",
+            label_visibility="collapsed"
+        )
+    
+    with col_button:
+        search_pressed = st.button("🔍 بحث", key="search_btn", use_container_width=True)
+    
+    # Advanced search options
+    with st.expander("⚙️ خيارات البحث المتقدمة", expanded=False):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            max_results = st.slider("عدد النتائج", 5, 50, 10, key="max_results")
+        
+        with col2:
+            search_in_tafseer = st.checkbox("البحث في التفسير أيضاً", value=True, key="search_tafseer")
+    
+    # Perform search
+    if search_query and (search_pressed or search_query):
+        # Add to search history
+        if search_query not in st.session_state.search_history:
+            st.session_state.search_history.insert(0, search_query)
+            st.session_state.search_history = st.session_state.search_history[:20]
+        
+        with st.spinner(f"🔍 جاري البحث..."):
+            results_df = pd.DataFrame()
+            similarities = []
+            
+            # Prepare search dataframe
+            search_df = df.copy()
+            if search_in_tafseer and 'tafseer' in df.columns:
+                # Combine ayah and tafseer for search
+                search_df['combined_text'] = (
+                    search_df['clean_text'].fillna('') + ' ' + 
+                    search_df.get('clean_tafseer', '').fillna('')
+                )
+                search_df['clean_text'] = search_df['combined_text']
+            
+            # Execute search based on selected mode
+            if st.session_state.search_mode == 'tfidf' and models['tfidf_available']:
+                results_df, similarities = tfidf_search(search_query, search_df, max_results)
+                model_type = 'TF-IDF'
+            else:
+                results_df, similarities = simple_text_search(search_query, search_df, max_results)
+                model_type = 'بحث نصي'
+            
+            # Display results
+            if not results_df.empty:
+                st.success(f"🎯 تم العثور على {len(results_df)} نتيجة")
+                
+                # Results summary
+                if similarities:
+                    avg_similarity = np.mean(similarities) * 100
+                    max_similarity = np.max(similarities) * 100
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("متوسط الدقة", f"{avg_similarity:.1f}%")
+                    with col2:
+                        st.metric("أعلى دقة", f"{max_similarity:.1f}%")
+                    with col3:
+                        unique_surahs = len(results_df['surah'].unique())
+                        st.metric("عدد السور", unique_surahs)
+                
+                # Display results
+                for idx, (_, row) in enumerate(results_df.iterrows()):
+                    similarity = similarities[idx] if idx < len(similarities) else None
+                    display_ayah_card(row, similarity, model_type, f"result_{idx}")
+                    
+            else:
+                st.markdown("""
+                <div style="
+                    text-align: center;
+                    padding: 3rem 2rem;
+                    background: var(--gray-50);
+                    border-radius: var(--radius-2xl);
+                    border: 2px dashed var(--gray-300);
+                    margin: 2rem 0;
+                ">
+                    <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">🔍</div>
+                    <h3 style="color: var(--gray-600); margin-bottom: 0.5rem;">لا توجد نتائج</h3>
+                    <p style="color: var(--gray-500);">جرب كلمات مختلفة أو غير نوع البحث</p>
+                </div>
+                """, unsafe_allow_html=True)
+    
+    # Quick search suggestions
+    if not search_query:
+        st.markdown("### 🚀 اقتراحات البحث")
+        
+        suggestions = [
+            "الصبر", "الرحمة", "الجنة", 
+            "التوبة", "الدعاء", "العدل",
+            "الصلاة", "الأمانة", "التقوى"
+        ]
+        
+        cols = st.columns(3)
+        for i, suggestion in enumerate(suggestions):
+            with cols[i % 3]:
+                if st.button(f"🔍 {suggestion}", key=f"suggestion_{i}", use_container_width=True):
+                    st.session_state.main_search = suggestion
+                    st.rerun()
+        
+        # Search history
+        if st.session_state.search_history:
+            st.markdown("### 📚 آخر عمليات البحث")
+            
+            for i, query in enumerate(st.session_state.search_history[:5]):
+                if st.button(f"📖 {query}", key=f"history_{i}", use_container_width=True):
+                    st.session_state.main_search = query
+                    st.rerun()
+
+def show_saved_tab():
+    """Show saved ayahs"""
+    st.markdown("### 📚 الآيات المحفوظة")
+    
+    if not st.session_state.saved_ayahs:
+        st.markdown("""
+        <div style="
+            text-align: center;
+            padding: 3rem 2rem;
+            background: var(--gray-50);
+            border-radius: var(--radius-2xl);
+            border: 2px dashed var(--gray-300);
+            margin: 2rem 0;
+        ">
+            <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">📚</div>
+            <h3 style="color: var(--gray-600); margin-bottom: 0.5rem;">لا توجد آيات محفوظة</h3>
+            <p style="color: var(--gray-500);">احفظ آياتك المفضلة من نتائج البحث لتظهر هنا</p>
+        </div>
+        """, unsafe_allow_html=True)
+        return
+    
+    # Statistics
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("إجمالي المحفوظة", len(st.session_state.saved_ayahs))
+    with col2:
+        st.metric("قراءات اليوم", st.session_state.daily_verses_read)
+    with col3:
+        st.metric("إجمالي القراءات", st.session_state.total_verses_read)
+    
+    # Display saved ayahs
+    st.markdown("### 📖 آياتك المحفوظة")
+    
+    for i, ayah in enumerate(st.session_state.saved_ayahs):
+        st.markdown(f"""
+        <div class="premium-card">
+            <div style="padding: 2rem;">
+                <div class="premium-arabic">{ayah}</div>
+                <div style="margin-top: 1rem;">
+                    <small style="color: var(--gray-500);">محفوظة في {datetime.now().strftime('%Y-%m-%d')}</small>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+def show_stats_tab(df, models):
+    """Statistics tab"""
+    st.markdown("### 📊 الإحصائيات والتحليلات")
+    
+    # Dataset statistics
+    st.markdown("#### 📚 إحصائيات المجموعة")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("إجمالي الآيات", f"{len(df):,}")
+    
+    with col2:
+        unique_surahs = len(df['surah'].unique())
+        st.metric("عدد السور", unique_surahs)
+    
+    with col3:
+        has_tafseer = len(df[df['tafseer'].notna() & (df['tafseer'] != '')])
+        st.metric("آيات بتفسير", f"{has_tafseer:,}")
+    
+    with col4:
+        avg_length = df['text'].str.len().mean()
+        st.metric("متوسط طول الآية", f"{avg_length:.0f} حرف")
+    
+    # Model performance
+    st.markdown("#### 🤖 حالة النماذج")
+    show_model_status(models)
+    
+    # User statistics
+    st.markdown("#### 👤 إحصائياتك الشخصية")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("الآيات المحفوظة", len(st.session_state.saved_ayahs))
+    
+    with col2:
+        st.metric("عمليات البحث", len(st.session_state.search_history))
+    
+    with col3:
+        st.metric("إجمالي القراءات", st.session_state.total_verses_read)
+
+def show_about_tab():
+    """About section"""
+    st.markdown("### ℹ️ حول تطبيق تفسير القرآن الذكي")
+    
+    st.markdown("""
+    <div style="
+        background: linear-gradient(135deg, var(--primary-50), var(--secondary-50));
+        padding: 2rem;
+        border-radius: var(--radius-2xl);
+        border: 1px solid var(--primary-200);
+        margin: 2rem 0;
+    ">
+        <h4 style="color: var(--primary-700); margin-bottom: 1rem;">🤖 تطبيق متطور للبحث في القرآن الكريم</h4>
+        <p style="color: var(--gray-700); line-height: 1.6;">
+            يستخدم هذا التطبيق تقنيات متطورة للبحث في القرآن الكريم وتفسيره.
+            يدعم البحث النصي التقليدي والبحث الذكي باستخدام TF-IDF.
+            البيانات محملة من Hugging Face Dataset: MohamedRashad/Quran-Tafseer
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Technical details
+    st.markdown("#### 🛠️ التقنيات المستخدمة")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        **🔍 محركات البحث:**
+        - **TF-IDF**: تحليل تكرار المصطلحات والوثائق
+        - **البحث النصي**: مطابقة الكلمات المباشرة
+        - **معالجة النصوص العربية**: إزالة التشكيل والتطبيع
+        """)
+    
+    with col2:
+        st.markdown("""
+        **📚 مصادر البيانات:**
+        - Hugging Face Dataset: MohamedRashad/Quran-Tafseer
+        - تفسير شامل للقرآن الكريم
+        - معالجة متقدمة للنصوص العربية
+        """)
+    
+    # Installation guide
+    st.markdown("#### 📥 المكتبات المطلوبة")
+    
+    requirements = """
+streamlit>=1.28.0
+pandas>=1.5.0
+numpy>=1.21.0
+datasets>=2.14.0
+scikit-learn>=1.3.0
+"""
+    
+    st.code(requirements, language="text")
+    
+    st.info("""
+    💡 **نصائح لتحسين الأداء:**
+    - استخدم كلمات مفتاحية واضحة ومحددة
+    - جرب البحث في التفسير للحصول على نتائج أوسع
+    - احفظ آياتك المفضلة للرجوع إليها لاحقاً
+    - استخدم اقتراحات البحث للاستكشاف
+    """)
+
+def main():
+    """Main application"""
+    # Initialize session state
+    initialize_session_state()
+    
+    # Show loading message
+    with st.spinner("🚀 جاري تحضير التطبيق..."):
+        # Load data and models
+        df = load_quran_dataset()
+        models = initialize_models()
+    
+    if df.empty:
+        st.error("❌ لا يمكن تحميل بيانات القرآن")
+        st.stop()
+    
+    # Header
+    st.markdown(f"""
+    <div class="premium-header">
+        <div class="header-content">
+            <div style="margin-bottom: 1.5rem;">
+                <div style="font-size: 4rem; margin-bottom: 1rem;">📖</div>
+            </div>
+            <h1 class="header-title">تفسير القرآن الذكي</h1>
+            <p style="font-size: 1.4rem; color: rgba(255, 255, 255, 0.95); margin-bottom: 1rem;">
+                Smart Quran Tafseer with AI-Powered Search
+            </p>
+            <p style="color: rgba(255, 255, 255, 0.8); font-size: 1.1rem;">
+                بحث ذكي في {len(df):,} آية قرآنية مع التفسير
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Show model status
+    show_model_status(models)
+    
+    # Navigation
+    tab1, tab2, tab3, tab4 = st.tabs(["🔍 البحث الذكي", "📚 المحفوظة", "📊 الإحصائيات", "ℹ️ حول التطبيق"])
+    
+    with tab1:
+        show_search_tab(df, models)
+    
+    with tab2:
+        show_saved_tab()
+    
+    with tab3:
+        show_stats_tab(df, models)
+    
+    with tab4:
+        show_about_tab()
+    
+    # Footer
+    st.markdown("---")
+    st.markdown(f"""
+    <div style="text-align: center; color: var(--gray-500); padding: 2rem;">
+        <p>📖 <strong>تفسير القرآن الذكي</strong> - تم التطوير بـ ❤️ لخدمة كتاب الله</p>
+        <p style="font-size: 0.9rem;">آخر تحديث: {datetime.now().strftime('%Y-%m-%d')}</p>
+        <p style="font-size: 0.8rem;">البيانات من: MohamedRashad/Quran-Tafseer على Hugging Face</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()
