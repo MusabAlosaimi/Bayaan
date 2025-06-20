@@ -190,7 +190,7 @@ def preprocess_arabic_text(text):
     return text
 
 def create_sample_data():
-    """Create sample data"""
+    """Create sample data as fallback"""
     sample_data = {
         'text': [
             'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
@@ -199,13 +199,10 @@ def create_sample_data():
             'مَالِكِ يَوْمِ الدِّينِ',
             'إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ',
             'اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ',
-            'صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ',
-            'الم',
-            'ذَٰلِكَ الْكِتَابُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ',
-            'الَّذِينَ يُؤْمِنُونَ بِالْغَيْبِ وَيُقِيمُونَ الصَّلَاةَ وَمِمَّا رَزَقْنَاهُمْ يُنفِقُونَ'
+            'صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ'
         ],
-        'surah': ['الفاتحة'] * 7 + ['البقرة'] * 3,
-        'ayah_number': [1, 2, 3, 4, 5, 6, 7, 1, 2, 3],
+        'surah': ['الفاتحة'] * 7,
+        'ayah_number': list(range(1, 8)),
         'tafseer': [
             'بسم الله الرحمن الرحيم: افتتاح كل سورة بحمد الله والثناء عليه',
             'الحمد لله رب العالمين: الثناء على الله بصفاته الجميلة',
@@ -213,10 +210,7 @@ def create_sample_data():
             'مالك يوم الدين: الله هو المالك المتصرف يوم القيامة',
             'إياك نعبد وإياك نستعين: التوحيد في العبادة والاستعانة',
             'اهدنا الصراط المستقيم: دعاء بالهداية إلى الطريق المستقيم',
-            'صراط الذين أنعمت عليهم: طريق الأنبياء والصالحين',
-            'الم: من الحروف المقطعة في أوائل السور',
-            'ذلك الكتاب لا ريب فيه: هذا القرآن الكريم لا شك فيه',
-            'الذين يؤمنون بالغيب: صفة المتقين أنهم يؤمنون بما غاب عنهم'
+            'صراط الذين أنعمت عليهم: طريق الأنبياء والصالحين'
         ]
     }
     
@@ -228,55 +222,126 @@ def create_sample_data():
 
 @st.cache_data
 def load_quran_dataset():
-    """Load Quran dataset"""
+    """Load Quran dataset using the exact code you specified"""
+    
     if not DATASETS_AVAILABLE:
-        st.warning("⚠️ مكتبة datasets غير مثبتة - استخدام بيانات تجريبية")
+        st.error("❌ مكتبة datasets غير مثبتة")
+        st.code("pip install datasets", language="bash")
+        st.warning("🔄 استخدام البيانات التجريبية...")
         return create_sample_data()
     
     try:
-        with st.spinner("📖 جاري تحميل بيانات القرآن..."):
+        with st.spinner("📖 جاري تحميل بيانات القرآن من Hugging Face..."):
+            # استخدام الكود الذي طلبته بالضبط
+            from datasets import load_dataset
             dataset = load_dataset("MohamedRashad/Quran-Tafseer")
+            df = dataset['train'].to_pandas()
             
-            if 'train' in dataset:
-                df = pd.DataFrame(dataset['train'])
-            else:
-                split_name = list(dataset.keys())[0]
-                df = pd.DataFrame(dataset[split_name])
+            st.success(f"✅ تم تحميل {len(df):,} سجل من Hugging Face")
             
-            # Handle column mapping
-            if 'ayah' in df.columns and 'text' not in df.columns:
-                df['text'] = df['ayah']
-            if 'verse' in df.columns and 'text' not in df.columns:
-                df['text'] = df['verse']
+            # عرض أول عينة من البيانات لفهم الهيكل
+            st.info("🔍 فحص هيكل البيانات...")
+            st.write("**أعمدة البيانات:**", list(df.columns))
             
-            # Ensure required columns
-            if 'text' not in df.columns:
-                st.error("❌ لا يمكن العثور على عمود النص")
-                return create_sample_data()
+            # عرض عينة من البيانات
+            if len(df) > 0:
+                st.write("**عينة من البيانات:**")
+                st.dataframe(df.head(3))
             
-            if 'surah' not in df.columns:
-                df['surah'] = 'غير محدد'
-            if 'ayah_number' not in df.columns:
-                df['ayah_number'] = range(1, len(df) + 1)
-            if 'tafseer' not in df.columns:
-                df['tafseer'] = ''
+            # تحويل الأعمدة حسب الحاجة
+            df = process_dataframe(df)
             
-            # Clean data
-            df['text'] = df['text'].fillna('').astype(str)
-            df['tafseer'] = df['tafseer'].fillna('').astype(str)
-            df['clean_text'] = df['text'].apply(preprocess_arabic_text)
-            df['clean_tafseer'] = df['tafseer'].apply(preprocess_arabic_text)
-            
-            # Remove empty rows
-            df = df[df['clean_text'].str.strip() != ''].copy()
-            df = df.reset_index(drop=True)
-            
-            st.success(f"✅ تم تحميل {len(df):,} آية من Hugging Face")
             return df
             
     except Exception as e:
         st.error(f"❌ خطأ في تحميل البيانات: {e}")
+        st.warning("🔄 استخدام البيانات التجريبية...")
         return create_sample_data()
+
+def process_dataframe(df):
+    """Process the loaded dataframe to standardize columns"""
+    
+    # خريطة الأعمدة المحتملة
+    column_mapping = {
+        'ayah': 'text',
+        'verse': 'text',
+        'arabic': 'text',
+        'quran_text': 'text',
+        'verse_text': 'text',
+        'surah_name': 'surah',
+        'chapter': 'surah',
+        'chapter_name': 'surah',
+        'verse_number': 'ayah_number',
+        'ayah_num': 'ayah_number',
+        'verse_id': 'ayah_number',
+        'tafsir': 'tafseer',
+        'interpretation': 'tafseer',
+        'explanation': 'tafseer'
+    }
+    
+    # تطبيق تحويل الأعمدة
+    for old_col, new_col in column_mapping.items():
+        if old_col in df.columns and new_col not in df.columns:
+            df[new_col] = df[old_col]
+            st.info(f"تم تحويل العمود '{old_col}' إلى '{new_col}'")
+    
+    # التأكد من وجود الأعمدة المطلوبة
+    if 'text' not in df.columns:
+        # البحث عن أي عمود يحتوي على نص عربي
+        for col in df.columns:
+            if len(df) > 0:
+                sample_text = str(df[col].iloc[0])
+                # فحص وجود أحرف عربية
+                if any(char in sample_text for char in 'ابتثجحخدذرزسشصضطظعغفقكلمنهوي'):
+                    df['text'] = df[col]
+                    st.success(f"تم استخدام العمود '{col}' كنص الآيات")
+                    break
+        
+        if 'text' not in df.columns:
+            st.error("❌ لا يمكن العثور على عمود يحتوي على نص الآيات")
+            return create_sample_data()
+    
+    # إضافة الأعمدة المفقودة
+    if 'surah' not in df.columns:
+        df['surah'] = 'غير محدد'
+        st.warning("⚠️ عمود السورة غير موجود - تم إضافة قيمة افتراضية")
+    
+    if 'ayah_number' not in df.columns:
+        df['ayah_number'] = range(1, len(df) + 1)
+        st.warning("⚠️ عمود رقم الآية غير موجود - تم إنشاء ترقيم تلقائي")
+    
+    if 'tafseer' not in df.columns:
+        df['tafseer'] = ''
+        st.warning("⚠️ عمود التفسير غير موجود - سيتم البحث في النص فقط")
+    
+    # تنظيف البيانات
+    df['text'] = df['text'].fillna('').astype(str)
+    df['tafseer'] = df['tafseer'].fillna('').astype(str)
+    df['surah'] = df['surah'].fillna('غير محدد').astype(str)
+    
+    # معالجة النصوص العربية
+    df['clean_text'] = df['text'].apply(preprocess_arabic_text)
+    df['clean_tafseer'] = df['tafseer'].apply(preprocess_arabic_text)
+    
+    # إزالة الصفوف الفارغة
+    initial_count = len(df)
+    df = df[df['clean_text'].str.strip() != ''].copy()
+    df = df.reset_index(drop=True)
+    final_count = len(df)
+    
+    if initial_count != final_count:
+        st.info(f"تم إزالة {initial_count - final_count} صف فارغ")
+    
+    # عرض إحصائيات البيانات النهائية
+    st.success(f"""
+    ✅ **تم معالجة البيانات بنجاح:**
+    - إجمالي الآيات: {len(df):,}
+    - السور المختلفة: {len(df['surah'].unique())}
+    - آيات بتفسير: {len(df[df['tafseer'].str.strip() != ''])}
+    - متوسط طول الآية: {df['text'].str.len().mean():.0f} حرف
+    """)
+    
+    return df
 
 def simple_text_search(query, df, top_k=10):
     """Simple text search"""
@@ -441,10 +506,17 @@ def show_model_status():
     """Show model status"""
     st.markdown('<div class="model-status">', unsafe_allow_html=True)
     
+    # Dataset status
+    datasets_class = "model-active" if DATASETS_AVAILABLE else "model-inactive"
+    datasets_icon = "🤗" if DATASETS_AVAILABLE else "❌"
+    st.markdown(f'<div class="model-badge {datasets_class}"><span>{datasets_icon}</span><span>Hugging Face</span></div>', unsafe_allow_html=True)
+    
+    # TF-IDF status
     tfidf_class = "model-active" if SKLEARN_AVAILABLE else "model-inactive"
     tfidf_icon = "📊" if SKLEARN_AVAILABLE else "❌"
     st.markdown(f'<div class="model-badge {tfidf_class}"><span>{tfidf_icon}</span><span>TF-IDF</span></div>', unsafe_allow_html=True)
     
+    # Simple search (always available)
     st.markdown('<div class="model-badge model-active"><span>🔍</span><span>بحث نصي</span></div>', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
@@ -579,7 +651,7 @@ def show_stats_tab(df):
     """Statistics tab"""
     st.markdown("### 📊 الإحصائيات")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.metric("إجمالي الآيات", f"{len(df):,}")
@@ -591,6 +663,43 @@ def show_stats_tab(df):
     with col3:
         has_tafseer = len(df[df['tafseer'].notna() & (df['tafseer'] != '')])
         st.metric("آيات بتفسير", f"{has_tafseer:,}")
+    
+    with col4:
+        avg_length = df['text'].str.len().mean()
+        st.metric("متوسط طول الآية", f"{avg_length:.0f} حرف")
+    
+    # User statistics
+    st.markdown("#### 👤 إحصائياتك الشخصية")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("الآيات المحفوظة", len(st.session_state.saved_ayahs))
+    
+    with col2:
+        st.metric("عمليات البحث", len(st.session_state.search_history))
+    
+    with col3:
+        st.metric("إجمالي القراءات", st.session_state.total_verses_read)
+    
+    # Show some dataset insights
+    if len(df) > 0:
+        st.markdown("#### 📈 تحليل البيانات")
+        
+        # Most common words in dataset
+        if 'clean_text' in df.columns:
+            all_words = []
+            for text in df['clean_text'].head(1000):  # Sample first 1000 for performance
+                all_words.extend(text.split())
+            
+            if all_words:
+                word_counts = Counter(all_words)
+                most_common = word_counts.most_common(10)
+                
+                st.markdown("**الكلمات الأكثر تكراراً:**")
+                for word, count in most_common:
+                    if word and len(word) > 1:  # Skip single characters
+                        st.write(f"- **{word}**: {count:,} مرة")
 
 def show_about_tab():
     """About tab"""
@@ -600,18 +709,65 @@ def show_about_tab():
     **🤖 تطبيق متطور للبحث في القرآن الكريم**
     
     يستخدم هذا التطبيق تقنيات متطورة للبحث في القرآن الكريم وتفسيره:
-    - **TF-IDF**: البحث الذكي باستخدام تحليل المصطلحات
-    - **البحث النصي**: البحث التقليدي بمطابقة الكلمات
+    
+    #### 🔍 **محركات البحث:**
+    - **TF-IDF**: البحث الذكي باستخدام تحليل المصطلحات والوثائق
+    - **البحث النصي**: البحث التقليدي بمطابقة الكلمات المباشرة
     - **معالجة النصوص العربية**: تطبيع النصوص وإزالة التشكيل
     
-    **📚 مصدر البيانات:** MohamedRashad/Quran-Tafseer على Hugging Face
+    #### 📚 **مصدر البيانات:**
+    - **Hugging Face Dataset**: MohamedRashad/Quran-Tafseer
+    - **التحميل**: يتم تحميل البيانات مباشرة من Hugging Face
+    - **الحجم**: آلاف الآيات مع التفسير الكامل
+    
+    #### 🛠️ **التقنيات المستخدمة:**
+    ```python
+    from datasets import load_dataset
+    dataset = load_dataset("MohamedRashad/Quran-Tafseer")
+    df = dataset['train'].to_pandas()
+    ```
+    
+    #### 📦 **المتطلبات:**
+    ```bash
+    pip install streamlit pandas numpy datasets scikit-learn
+    ```
+    
+    #### 💡 **نصائح للاستخدام:**
+    - استخدم كلمات مفتاحية واضحة ومحددة
+    - جرب البحث في التفسير للحصول على نتائج أوسع
+    - احفظ آياتك المفضلة للرجوع إليها لاحقاً
+    - استخدم اقتراحات البحث للاستكشاف
     """)
+    
+    # Show technical details
+    st.markdown("#### 🔧 التفاصيل التقنية")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        **المكتبات المستخدمة:**
+        - Streamlit (واجهة المستخدم)
+        - Pandas (معالجة البيانات)
+        - Scikit-learn (البحث الذكي)
+        - Datasets (تحميل البيانات)
+        """)
+    
+    with col2:
+        st.markdown("""
+        **الميزات:**
+        - بحث سريع ودقيق
+        - واجهة باللغة العربية
+        - حفظ الآيات المفضلة
+        - إحصائيات مفصلة
+        """)
 
 def main():
     """Main application"""
     initialize_session_state()
     
-    with st.spinner("🚀 جاري تحضير التطبيق..."):
+    # Show loading message
+    with st.spinner("🚀 جاري تحضير التطبيق وتحميل البيانات..."):
         df = load_quran_dataset()
     
     if df.empty:
@@ -623,10 +779,12 @@ def main():
     <div class="premium-header">
         <h1 class="header-title">تفسير القرآن الذكي</h1>
         <p style="font-size: 1.2rem; margin-bottom: 1rem;">Smart Quran Tafseer with AI Search</p>
-        <p>بحث ذكي في {len(df):,} آية قرآنية مع التفسير</p>
+        <p>بحث ذكي في {len(df):,} آية قرآنية مع التفسير من Hugging Face</p>
+        <p style="font-size: 0.9rem; opacity: 0.8;">المصدر: MohamedRashad/Quran-Tafseer</p>
     </div>
     """, unsafe_allow_html=True)
     
+    # Show model status
     show_model_status()
     
     # Navigation
@@ -650,7 +808,13 @@ def main():
     <div style="text-align: center; color: var(--gray-500); padding: 2rem;">
         <p>📖 <strong>تفسير القرآن الذكي</strong> - تم التطوير بـ ❤️ لخدمة كتاب الله</p>
         <p style="font-size: 0.9rem;">آخر تحديث: {datetime.now().strftime('%Y-%m-%d')}</p>
-        <p style="font-size: 0.8rem;">البيانات من: MohamedRashad/Quran-Tafseer على Hugging Face</p>
+        <p style="font-size: 0.8rem;">
+            البيانات من: 
+            <a href="https://huggingface.co/datasets/MohamedRashad/Quran-Tafseer" target="_blank" style="color: var(--primary-600);">
+                MohamedRashad/Quran-Tafseer
+            </a> 
+            على Hugging Face
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
